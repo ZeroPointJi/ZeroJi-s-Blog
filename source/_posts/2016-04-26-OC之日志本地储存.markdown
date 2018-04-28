@@ -1,0 +1,56 @@
+---
+title:  "iOS 之输出日志本地存储"
+date:   2016-04-26 21:10:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+宏定义输出函数, 根据 `DEBUG` 开关来控制是否执行输出
+
+```objc
+#ifdef DEBUG
+#define LOG(fmt, ...) do {                                            \
+    NSString* file = [[NSString alloc] initWithFormat:@"%s", __FILE__]; \
+    NSLog((@"File:%@ Function:%s Line:%d content:" fmt), [file lastPathComponent], __func__, __LINE__, ##__VA_ARGS__); \
+} while(0)
+#define LOG_METHOD NSLog(@"%s", __func__)
+#define LOG_CMETHOD NSLog(@"%@/%@", NSStringFromClass([self class]), NSStringFromSelector(_cmd))
+#define LOG_TRACE(x) do {printf x; putchar('\n'); fflush(stdout);} while (0)
+#define LOG_APPEND NSLog(@"------------------------------------------------------------------------------------------------应用程序关闭------------------------------------------------------------------------------------------------")
+#else
+#define LOG(...)
+#define LOG_METHOD
+#define LOG_CMETHOD
+#define LOG_TRACE(x)
+#define LOG_APPEND
+#endif
+```
+
+定义一个函数将输出信息保存到本地
+
+```objc
++ (void)redirectNSLogToDocumentFolder{
+    // 获取Document文件所在地址
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *documentsDirectory = [paths objectAtIndex:0];
+     
+    // 转换时间格式
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateFormat = @"yyyy-MM-dd";
+    NSString *stringDate = [formatter stringFromDate:[NSDate date]];
+    
+    // 拼接文件名
+    NSString *fileName =[NSString stringWithFormat:@"%@.log", stringDate];
+    NSString *logFilePath = [documentsDirectory stringByAppendingPathComponent:fileName];
+    
+    // 写入日志文件
+    freopen([logFilePath cStringUsingEncoding:NSASCIIStringEncoding],"a+",stderr);
+}
+```
+
+文件名称用日期命名, 输出的日志信息格式为
+
+2016-04-26.log
+
+2016-04-26 21:28:14.367 LogManager[50020:13135086] File:AppDelegate.m Function:-[AppDelegate application:didFinishLaunchingWithOptions:] Line:25 content:应用程序完成加载
+
+方便出错时寻找BUG, 也可以在上线后, 用户提交BUG时获取日志信息, 方便修改.

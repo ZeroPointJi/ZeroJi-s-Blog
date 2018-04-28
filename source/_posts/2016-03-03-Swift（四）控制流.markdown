@@ -1,0 +1,207 @@
+---
+title:  "Switf（四）控制流"
+date:   2016-03-03 21:00:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## for-in 循环
+
+```swift
+for index in 1...5 {
+    print("\(index) times 5 is \(index * 5)")
+}
+
+
+let base = 3
+let power = 10
+var answer = 1
+for _ in 1...power {
+    answer *= base
+    print(answer)
+}
+
+let names = ["Anna", "Alex", "Brian", "Jack"]
+for name in names {
+    print("Hello, \(name)")
+}
+
+let numberOfLegs = ["spider": 8, "ant": 6, "cat": 4]
+for (animalName, legCount) in numberOfLegs {
+    print("\(animalName)s have \(legCount) legs")
+}
+```
+
+## for 循环
+
+```swift
+for var index = 0; index < 3; index++ {
+    print("index is \(index)")
+}
+```
+
+## while 循环
+
+```swift
+let max = 10
+var value1 = 1
+while value1 < max {
+    print(value1)
+    value1++
+}
+```
+
+## Repeat-While
+
+先执行一次while中的语句，再判断。
+
+```swift
+var value2 = 1
+repeat {
+    print(value2)
+    value2++
+} while value2 < max
+```
+
+## if
+
+```swift
+var value3 = 1
+if value3 < 2 {
+    print("\(value3) < 2")
+}
+```
+
+## switch
+
+```swift
+let someCharacter: Character = "e"
+switch someCharacter { // case 后的语句执行完成后不必要执行break来跳出，程序会自动跳出。
+case "a", "e", "i", "o", "u":
+    print("\(someCharacter) is a vowel")
+case "b", "c", "d", "f", "g", "h", "j", "k", "l", "m",
+"n", "p", "q", "r", "s", "t", "v", "w", "x", "y", "z":
+    print("\(someCharacter) is a consonant")
+default:
+    print("\(someCharacter) is not a vowel or a consonant")
+}
+
+// 区间匹配
+let approximateCount = 62
+let countedThings = "moons orbiting Saturn"
+var naturalCount: String
+switch approximateCount {
+case 0:
+    naturalCount = "no"
+case 1..<5:
+    naturalCount = "a few"
+case 5..<12:
+    naturalCount = "several"
+case 12..<100:
+    naturalCount = "dozens of"
+case 100..<1000:
+    naturalCount = "hundreds of"
+default:
+    naturalCount = "many"
+}
+
+// 使用_来匹配所有可能的值
+let somePoint = (1, 1)
+switch somePoint {
+case (0, 0):
+    print("(0, 0) is at the origin")
+case (_, 0):
+    print("(\(somePoint.0), 0) is on the x-axis")
+case (0, _):
+    print("(0, \(somePoint.1)) is on the y-axis")
+case (-2...2, -2...2):
+    print("(\(somePoint.0), \(somePoint.1)) is inside the box")
+default:
+    print("(\(somePoint.0), \(somePoint.1)) is outside of the box")
+}
+
+// 在一个元组中使用值来绑定
+let anotherPoint = (2, 0)
+switch anotherPoint {
+case (let x, 0):
+    print("on the x-axis with an x value of \(x)")
+case (0, let y):
+    print("on the y-axis with a y value of \(y)")
+case let (x, y):
+    print("somewhere else at (\(x), \(y))")
+}
+
+// 使用where语句来判断额外条件
+let yetAnotherPoint = (1, -1)
+switch yetAnotherPoint {
+case let (x, y) where x == y:
+    print("(\(x), \(y)) is on the line x == y")
+case let (x, y) where x == -y:
+    print("(\(x), \(y)) is on the line x == -y")
+case let (x, y):
+    print("(\(x), \(y)) is just some arbitrary point")
+}
+
+// fallthrough 在执行完当前case中的语句后继续执行下个case或者default中的语句
+let integerToDescribe = 5
+var description = "The number \(integerToDescribe) is"
+switch integerToDescribe {
+case 2, 3, 5, 7, 11, 13, 17, 19:
+    description += " a prime number, and also"
+    fallthrough
+default:
+    description += " an integer."
+}
+print(description)
+```
+
+## 给while指定一个标签
+
+```swift
+var value = 1
+game: while 1 < 2 {
+    switch value{
+    case 1,2,3,4,5:
+        value++
+        print(value)
+        continue game
+    default:
+        break game
+    }
+}
+```
+
+如果不指定标签，break就不能结束while循环，会形成死循环。
+
+## guard
+
+```swift
+unc greet(person: [String: String]) {
+    guard let name = person["name"] else {
+        return
+    }
+    
+    print("Hello \(name)!")
+    
+    guard let location = person["location"] else {
+        print("I hope the weather is nice near you.")
+        return
+    }
+    
+    print("I hope the weather is nice in \(location).")
+}
+greet(["name": "John"])
+greet(["name": "Jane", "location": "Cupertino"])
+```
+
+> - guard充当了警卫员一职，保证条件满足情况下，才能继续执行下面的代码，否则只能else返回。切记else中一定需要有返回的语句，比如return、continue、break、throw这种提早退出的关键字！！！
+- let定义的name不再是局部变量，而是全局变量。
+
+## 检查API可用性
+
+```swift
+if #available(iOS 9, OSX 10.10, *) {
+    // 在 iOS 使用 iOS 9 的 API, 在 OS X 使用 OS X v10.10 的 API
+} else {
+    // 使用先前版本的 iOS 和 OS X 的 API
+}
+```

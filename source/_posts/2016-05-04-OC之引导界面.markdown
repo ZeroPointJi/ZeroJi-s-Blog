@@ -1,0 +1,261 @@
+---
+title:  "iOS 之引导界面"
+date:   2016-05-04 15:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+首先来说一下我对引导界面的理解, 引导界面是在启动界面后出现的视图, 就是 `Window` 的根视图控制器.
+
+弹出引导界面的条件为
+
+1. 第一次启动App
+2. 版本更新后第一次启动App
+
+引导界面中的视图应该为一个轮播图, 轮播图中包括一个 `UIPageControl`, 一个进入 `UIButton`, 有些引导界面还包含跳过 `UIButton`.
+
+了解清楚原理后, 我们开始制作引导界面.
+
+创建 `FirstLunchViewController` 继承自 `ViewController`
+
+在 `ViewDidLoad` 中完成大体框架.
+
+```objc
+- (void)viewDidLoad {
+    [super viewDidLoad];
+        
+    self.view.backgroundColor = [UIColor redColor];
+    
+    //  设置滚动视图
+    [self setupScrollView];
+    
+    // 设置页面指示器
+    [self setupPageControl];
+    
+    // 设置进入按钮
+    [self setupIntoButton];
+}
+```
+
+然后实现方法
+
+```objc
+/**
+ *  初始化滚动视图
+ */
+- (void)setupScrollView
+{
+    _scrollView = [[UIScrollView alloc] initWithFrame:kScreenFrame];
+    _scrollView.pagingEnabled = YES;
+    _scrollView.delegate = self;
+    _scrollView.contentSize = CGSizeMake(kScreenW * self.scrollViewArr.count, 0);
+    _scrollView.bounces = NO;
+    [self.view addSubview:_scrollView];
+    
+    CGFloat current = 0;
+    for (UIView *view in self.scrollViewArr) {
+        view.frame = CGRectMake(current * kScreenW, 0, kScreenW, kScreenH);
+        [_scrollView addSubview:view];
+        current++;
+    }
+}
+
+/**
+ *  初始化页面指示器
+ */
+- (void)setupPageControl
+{
+    _pageControl = [[UIPageControl alloc] initWithFrame:CGRectMake(0, kScreenH - 50, kScreenW, 50)];
+    _pageControl.numberOfPages = self.scrollViewArr.count;
+    _pageControl.pageIndicatorTintColor = [UIColor whiteColor];
+    _pageControl.currentPageIndicatorTintColor = [UIColor darkGrayColor];
+    [_pageControl addTarget:self action:@selector(pageControlValueChanged:) forControlEvents:UIControlEventValueChanged];
+    [self.view addSubview:_pageControl];
+}
+
+/**
+ *  调整输入按钮位置
+ */
+- (void)setupIntoButton
+{
+    _intoButton.center = CGPointMake((self.scrollViewArr.count - 1) * kScreenW + kScreenW / 2, kScreenH - 200);
+    [_intoButton addTarget:self action:@selector(presentToLunchVC) forControlEvents:UIControlEventTouchUpInside];
+    [_scrollView addSubview:_intoButton];
+}
+```
+
+为了使引导视图可复用, 我留了3个属性给外部设置
+
+```objc
+/** 所有引导的视图 */
+@property (nonatomic, copy) NSArray *scrollViewArr;
+/** 引导界面过后推出的视图控制器 */
+@property (nonatomic, strong) UIViewController *presentViewController;
+/** 点击进入主页的按钮 */
+@property (nonatomic, strong) UIButton *intoButton;
+```
+
+最后完成各种事件
+
+```objc
+/**
+ *  按钮点击事件
+ */
+- (void)presentToLunchVC
+{
+    self.presentViewController.transitioningDelegate = self.animator;
+    self.presentViewController.modalPresentationStyle = UIModalPresentationCustom;
+    [self presentViewController:self.presentViewController animated:YES completion:nil];
+}
+
+/**
+ *  指示器事件
+ *
+ *  @param pageControl 指示器
+ */
+- (void)pageControlValueChanged:(UIPageControl *)pageControl
+{
+     CGFloat offsetx = pageControl.currentPage;
+         self.scrollView.contentOffset = CGPointMake(offsetx * kScreenW, 0);
+
+}
+
+/**
+ *  滚动事件
+ *
+ *  @param scrollView 滚动视图
+ */
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+     CGFloat offsetx = scrollView.contentOffset.x;
+         self.pageControl.currentPage = (int)(offsetx / kScreenW  + 0.5);
+
+}
+```
+
+`delegate` 为弱引用, 所以设置代理不为本控制器时, 需要定义一个属性.
+
+由于系统自带的 `modal` 转场动画太过难看, 我自定义了一个转场动画类.
+
+```objc
+// 返回负责转场的控制器对象
+- (nullable UIPresentationController *)presentationControllerForPresentedViewController:(UIViewController *)presented presentingViewController:(UIViewController *)presenting sourceViewController:(UIViewController *)source
+{
+    UIPresentationController *controller = [[UIPresentationController alloc] initWithPresentedViewController:presented presentingViewController:presenting];
+    return controller;
+}
+
+// 只要使用了一下方法, 动画所需的所有特效以及参数都需要程序员自己设定
+/**
+ 指定展现动画的控制器
+  
+ - parameter presented:  被展示的控制器
+ - parameter presenting: 推出控制器的控制器
+ 
+ - returns: 指定转场控制器
+ */
+- (nullable id <UIViewControllerAnimatedTransitioning>)animationControllerForPresentedController:(UIViewController *)presented presentingController:(UIViewController *)presenting sourceController:(UIViewController *)source
+{
+    return self;
+}
+
+/**
+ 指定消失动画的控制器
+  
+ - parameter dismissed: 被消失的控制器
+ 
+ - returns: 指定转场控制器
+ */
+- (nullable id <UIViewControllerAnimatedTransitioning>)animationControllerForDismissedController:(UIViewController *)dismissed
+{
+    return self;
+}
+
+#pragma mark - UIViewControllerAnimatedTransitioning -
+/**
+ *  指定动画执行时长
+ *
+ *  @param transitionContext 上下文
+ *
+ *  @return 动画执行时长
+ */
+- (NSTimeInterval)transitionDuration:(id<UIViewControllerContextTransitioning>)transitionContext
+{
+    return 0.5;
+}
+
+/**
+ *  每次转场都会调用的方法
+ *
+ *  @param transitionContext 上下文
+ */
+- (void)animateTransition:(id<UIViewControllerContextTransitioning>)transitionContext
+{
+    // 1. 获取视图
+    UIView *toView = [transitionContext viewForKey:UITransitionContextToViewKey];
+    toView.alpha = 0.0;
+    // 2. 添加视图到控制器中
+    [[transitionContext containerView] addSubview:toView];
+    // 3. 执行动画
+    [UIView animateWithDuration:[self transitionDuration:transitionContext] animations:^{
+        toView.alpha = 1;
+    } completion:^(BOOL finished) {
+        // 一定要告诉系统动画执行完毕, 否则会出现未知错误
+        [transitionContext completeTransition:YES];
+    }];
+}
+```
+
+在 `AppDelegate` 中判断是否需要使用引导界面
+
+```objc
+
+#define kVersion  @"version"
+#define kIsFirstLunch  @"firstLunch"
+
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    
+        // 设置window
+        self.window = [[UIWindow alloc] initWithFrame:[UIScreen mainScreen].bounds];
+        self.window.backgroundColor = [UIColor whiteColor];
+        [self.window makeKeyAndVisible];
+        
+        // 获取info文件
+        NSDictionary *infoDic = [[NSBundle mainBundle] infoDictionary];
+        // 获取App的版本号
+        NSString *appVersion = [infoDic objectForKey:@"CFBundleShortVersionString"];
+    
+        // 判断是否第一次启动, 并且App版本是否一致
+        UIViewController *vc = nil;
+        if ([[NSUserDefaults standardUserDefaults] boolForKey:kIsFirstLunch] || [[[NSUserDefaults standardUserDefaults] valueForKey:kVersion] isEqualToString: appVersion]) {
+            vc = [[MainViewController alloc] init];
+        } else {
+            [[NSUserDefaults standardUserDefaults] setBool:NO forKey:kIsFirstLunch];
+            [[NSUserDefaults standardUserDefaults] setObject:appVersion forKey:kVersion];
+            FirstLunchViewController *firstVC = [[FirstLunchViewController alloc] init];
+        
+            // 设置导航视图
+            NSMutableArray *arr = [NSMutableArray array];
+            for (NSInteger i = 0; i < 3; i++) {
+                UIImageView *imageView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"deemo_icon"]];
+                [arr addObject:imageView];
+            }
+            firstVC.scrollViewArr = arr;
+        
+            // 设置进入按钮
+            UIButton *infoButton = [UIButton buttonWithType:UIButtonTypeCustom];
+            [infoButton setTitle:@"欢迎" forState:UIControlStateNormal];
+            [infoButton setTitleColor:[UIColor redColor] forState:UIControlStateNormal];
+            infoButton.frame = CGRectMake(0, 0, 100, 40);
+            firstVC.intoButton = infoButton;
+        
+            // 设置主界面
+            firstVC.presentViewController = [[MainViewController alloc] init];
+            vc = firstVC;
+        }
+        
+        // 设置 window 根视图控制器
+        self.window.rootViewController = vc;
+        
+        return YES;
+}
+```

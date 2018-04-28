@@ -1,0 +1,201 @@
+---
+title:  "Swift (九) 属性"
+date:   2016-03-12 15:00:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 储存属性
+
+```swift
+struct FixedLengthRange {
+    var firstValue: Int
+    let length: Int
+}
+
+var rangeOfThreeItems = FixedLengthRange(firstValue: 0, length: 3)
+rangeOfThreeItems.fristValue = 6
+```
+
+## 常量结构体的存储属性
+
+```swift
+let rangeOffourItems = FixedLengthRange(firstValue: 0, length: 3) // 如果赋值的是常量,也不印象结构体内部的赋值
+rangeOfThreeItems.firstvalue = 6
+print(rangeOfThreeItems.firstValue)
+```
+
+## 延迟存储属性
+
+```swift
+class DataImporter {
+    /**
+        DataImporter 是一个负责将外部文件中的数据导入的类
+        这个类的初始化会消耗不少时间
+    */
+    var fileName = "data.txt"
+}
+
+
+class DataManager {
+    lazy var importer = DataImporter() // lazy 声明的属性在调用时才会被创建
+    var data = [String]()
+}
+
+let manager = DataManager()
+manager.data.append("Some data")
+manager.data.append("Some more data")
+print(manager.importer.fileName) // 当调用的时候,importer属性才会被创建
+```
+
+## 计算属性
+
+```swift
+struct Point {
+     var x = 0.0, y = 0.0
+
+}
+struct Size {
+    var width = 0.0, height = 0.0
+
+}
+struct Rect {
+    var origin = Point()
+    var size = Size()
+    var center: Point {
+        get {
+            let centerX = origin.x + (size.width / 2)
+            let centerY = origin.y + (size.height / 2)
+            return Point(x: centerX, y: centerY)
+        }
+        set(newCenter) {
+            origin.x = newCenter.x - (size.width / 2)
+            origin.y = newCenter.y - (size.height / 2)
+        }
+    }
+}
+var square = Rect (origin: Point(x: 0.0, y: 0.0), size: Size(width: 10.0, height: 10.0))
+let initialSquareCenter = square.center
+square.center = Point(x: 15.0, y: 15.0)
+print("square.origin is now at (\(square.origin.x), \(square.origin.y))")
+```
+
+## 便捷setter声明
+
+```swift
+struct AlternativeRect {
+    var origin = Point()
+    var size = Size()
+    var center: Point {
+        get {
+            let centerX = origin.x + (size.width / 2)
+            let centerY = origin.y + (size.height / 2)
+            return Point(x: centerX, y: centerY)
+        }
+        set { // set不带参数,则默认为newValue
+            origin.x = newValue.x - (size.width / 2)
+            origin.y = newValue.y - (size.height / 2)
+        }
+    }
+}
+```
+
+## 只读计算属性
+
+```swift
+struct Cuboid {
+    var width = 0.0, height = 0.0, depth = 0.0
+    var volume: Double {
+        return width * height * depth
+    }
+}
+let fourByFiveByTwo = Cuboid(width: 4.0, height: 5.0, depth: 2.0)
+print("the volume of fourByFiveTwo is \(fourByFiveByTwo.volume)")
+```
+
+## 属性观察器
+
+```swift
+class StepCounter {
+    var totalSteps: Int = 0 {
+        willSet (newTotalSteps){ // 如果不制定参数名,则默认为newValue
+            print("About to set totalSteps to \(newTotalSteps)")
+        }
+        didSet { // 因为没有指定参数名,所以使用默认值oldValue
+            if totalSteps > oldValue {
+                print("Added \(totalSteps - oldValue) steps")
+            }
+        }
+    }
+}
+let stepCounter = StepCounter()
+stepCounter.totalSteps = 200
+stepCounter.totalSteps = 360
+stepCounter.totalSteps = 896
+```
+
+## 类型属性语法
+
+类型属性在本类中是唯一的,不管创建多少个实例,属性都是相同的一个
+
+```swift
+struct SomeStructure {
+    static var storedTypeProperty = "Some value."
+    static var computedTypeProperty: Int {
+        return 1
+    }
+}
+enum SomeEnumeration {
+    static var storedTypeProperty = "Some value."
+    static var computedTypeProperty: Int {
+        return 6
+    }
+}
+class SomeClass {
+    static var storedTypeProperty = "Some Value."
+    static var computedTypeProperty: Int {
+        return 27
+    }
+    class var overrideableComputedTypeProperty: Int { // class声明,代表此实现可以由子类重写
+        return 107
+    }
+}
+```
+
+## 获取和设置类型属性的值
+
+可以使用点语法访问,但是类型属性是通过类型本身来访问的
+
+```swift
+print(SomeStructure.storedTypeProperty)
+SomeStructure.storedTypeProperty = "Another value."
+print(SomeStructure.storedTypeProperty)
+print(SomeEnumeration.computedTypeProperty)
+print(SomeClass.computedTypeProperty)
+
+struct AudioChannel {
+    static let thresholdLevel = 10
+    static var maxInputLevelForAllChannels = 0
+    var currentLevel: Int = 0 {
+        didSet {
+            if currentLevel > AudioChannel.thresholdLevel {
+                // 将当前音量限制在阀值之内
+                currentLevel = AudioChannel.thresholdLevel
+            }
+            if currentLevel > AudioChannel.maxInputLevelForAllChannels {
+                // 储存当前音量作为新的最大输入音量
+                AudioChannel.maxInputLevelForAllChannels = currentLevel
+            }
+        }
+    }
+}
+var leftChannel = AudioChannel()
+var rightChannel = AudioChannel()
+
+leftChannel.currentLevel = 7
+print(leftChannel.currentLevel)
+print(AudioChannel.maxInputLevelForAllChannels)
+
+rightChannel.currentLevel = 11
+print(rightChannel.currentLevel)
+print(AudioChannel.maxInputLevelForAllChannels)
+```

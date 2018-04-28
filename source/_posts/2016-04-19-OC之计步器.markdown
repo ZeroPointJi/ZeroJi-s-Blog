@@ -1,0 +1,96 @@
+---
+title:  "iOS 之计步器"
+date:   2016-04-19 17:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 计步器
+
+`iOS` 之后, 系统使用 `CMPedometer` 类调用计步器.
+
+而我们可以进一步对其进行封装, 其中碰到的一些坑也会在下文一一讲述.
+
+首先是创建一个类, 继承自 `NSObject`.
+
+然后在 `.h` 中声明 `block` 和实例方法.
+
+```objc
+typedef void (^UseStep) (CMPedometerData * _Nullable pedometerData, NSError * _Nullable error);
+
+/** 根据时间计算步数 */
+- (void)stepFromDate:(NSDate * _Nonnull)startTime toDate:(NSDate * _Nullable)endTime withHandler:(UseStep _Nonnull)handler;
+
+/** 计算今天的步数 从0时0分0秒开始*/
+- (void)stepFromTodayWithHandler:(UseStep _Nonnull)handler;
+```
+
+然后在 `.m` 文件中添加一个类目, 并且在其中声明 `block` 属性 用 `copy` 修饰, 防止 `block` 在传输中被系统回收.
+
+```objc
+/** 定义为属性防止被销毁 */
+@property (nonatomic, copy) _Nonnull UseStep useStep;
+```
+
+声明全局变量 `CMPedometer`, 如果此变量不为全局, 后面就会出错.
+
+```objc
+static CMPedometer *pedometer = nil;
+```
+
+之后实现声明的方法, 并且重写 `init` 方法
+
+```objc
+- (instancetype)init
+{
+    self = [super init];
+    if (self) {
+        static dispatch_once_t onceToken;
+        dispatch_once(&onceToken, ^{
+            pedometer = [[CMPedometer alloc] init];
+        })
+    }
+    return self;
+
+}
+
+/** 根据时间计算步数 核心方法*/
+- (void)stepFromDate:(NSDate * _Nonnull)startTime toDate:(NSDate * _Nullable)endTime withHandler:(UseStep _Nonnull)handler
+{
+    self.useStep = handler;
+    if ([CMPedometer isStepCountingAvailable]) { // 判断是否支持记步功能
+        if (endTime) {
+            [pedometer queryPedometerDataFromDate:[NSDate systemTimeZoneWithDate:startTime] toDate:[NSDate systemTimeZoneWithDate:endTime] withHandler:self.useStep];
+        } else {
+            [pedometer startPedometerUpdatesFromDate:[NSDate systemTimeZoneWithDate:startTime] withHandler:self.useStep];
+        }
+    } else {
+       NSLog(@"设备不支持记步功能")
+    }
+}
+
+/** 计算今天的步数 从0时0分0秒开始*/
+- (void)stepFromTodayWithHandler:(UseStep _Nonnull)handler
+{
+    self.useStep = handler;
+    NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+    formatter.dateFormat = @"yyyy-MM-dd";
+    NSString *stringDate = [formatter stringFromDate:[NSDate date]];
+    NSDate *date = [formatter dateFromString:stringDate];
+
+    [self stepFromDate:date toDate:nil withHandler:self.useStep];
+}
+```
+
+最后添加一个类扩展来将生成的 `NSDate` 转换为系统时区的时间.
+
+```objc
+/** 转换时间为本地时区 */
++ (NSDate *)systemTimeZoneWithDate:(NSDate *)date
+{
+    NSTimeZone *zone = [NSTimeZone systemTimeZone];
+    NSTimeInterval interval = [zone secondsFromGMTForDate:date];
+    NSDate *systemTimeZoneDate = [date dateByAddingTimeInterval:(double)interval];
+
+    return systemTimeZoneDate;
+}
+```

@@ -1,0 +1,143 @@
+---
+title:  "Swift (七) 枚举"
+date:   2016-03-12 09:20:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 枚举语法
+
+```swift
+enum CompassPoint {
+    case North
+    case South
+    case East
+    case West
+}
+print(CompassPoint.North)
+
+enum Planet {
+    case Mercury, Venus, Earth, Mars, Jupiter, Saturr, Uranus, Neptune
+}
+print(Planet.Mars)
+
+var directionToHead = CompassPoint.West
+directionToHead = .East
+
+directionToHead = .South
+switch directionToHead {
+case .North:
+    print("Lots of planets have a north")
+    case .South:
+        print("Watch out for penguins")
+    case .East:
+        print("Where the sun rises")
+    case .West:
+        print("Where the skies are blue")
+}
+
+let somePlanet = Planet.Earth
+switch somePlanet {
+ case .Earth:
+    print("Mostly harmless")
+ default:
+    print("Not a sage place for humans")
+}
+
+enum Barcode {
+    case UPCA(Int, Int, Int, Int)
+    case QRCode(String)
+}
+var productBarcode = Barcode.UPCA(8, 85123, 12341234, 3)
+print(productBarcode)
+productBarcode = .QRCode("ADSDSADFASD")
+print(productBarcode)
+
+switch productBarcode {
+case .UPCA(let numberSystem, let manufacturer, let product, let check):
+    print("UPC-A:\(numberSystem), \(manufacturer), \(product), \(check)")
+case .QRCode(let productCode):
+    print("QR code: \(productCode)")
+}
+
+switch productBarcode {
+case let .UPCA(numberSystem, manufacturer, product, check):
+    print("UPC-A:\(numberSystem), \(manufacturer), \(product), \(check)")
+case let .QRCode(productCode):
+    print("QR code: \(productCode)")
+}
+```
+
+## 原始值
+
+```swift
+enum ASCIIControlCharacter: Character { // 声明了类型的枚举值,其中成员类型必须相同
+    case Tab = "\t"
+    case LineFeed = "\n"
+    case CarriageReturn = "\r"
+}
+```
+
+## 原始值的隐式赋值
+
+```swift
+enum NewPlanet: Int { // 枚举值为整型则元素依次递增
+    case Mercury = 1, Venus, Earth, Mars, Jupiter, Saturr, Uranus, Neptune
+}
+
+enum NewCompassPoint: String { // 枚举值声明为String,枚举值为名称
+    case North, South, East, West
+}
+
+let earthsOrder = NewPlanet.Earth.rawValue // rowValue 可以访问枚举值的原始值
+let sunsetDirection = NewCompassPoint.West.rawValue
+```
+
+## 使用原始值初始化枚举实例
+
+```swift
+let possiblePlanet = NewPlanet(rawValue: 7)! // 原始值构造器是一个可失败的构造器,并非所有原始值都有对应的枚举成员
+
+let positionToFind = 9
+if let somePlanet = NewPlanet(rawValue: positionToFind) {
+    switch somePlanet {
+    case .Earth:
+        print("Mostly harmless")
+    default:
+        print("Not a safe place for humans")
+} else {
+    print("There isn't a planet at position \(positionToFind)")
+}
+```
+
+## 递归枚举
+
+```swift
+enum ArithmeticExpression { // 储存了简单的算术表达式
+    case Number(Int)
+    indirect case Addition(ArithmeticExpression, ArithmeticExpression) // indirect case 表明该成员可以递归
+    indirect case Mutiplication(ArithmeticExpression, ArithmeticExpression)
+}
+
+indirect enum ArithmeticExpression {
+    case Number(Int)
+    case Addition(ArithmeticExpression, ArithmeticExpression)
+    case Multiplication(ArithmeticExpression, ArithmeticExpression)
+}
+
+func evaluate(expression: ArithmeticExpression) -> Int {
+    switch expression {
+    case .Number(let value):
+        return value
+    case .Addition(let left, let right):
+        return evaluate(left) + evaluate(right)
+    case .Multiplication(let left, let right):
+        return evaluate(left) * evaluate(right)
+    }
+}
+
+let five = ArithmeticExpression.Number(5)
+let four = ArithmeticExpression.Number(4)
+let sum = ArithmeticExpression.Addition(five, four)
+let product = ArithmeticExpression.Multiplication(sum, ArithmeticExpression.Number(2))
+print(evaluate(product))
+```

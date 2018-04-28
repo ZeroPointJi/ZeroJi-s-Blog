@@ -1,0 +1,59 @@
+---
+title:  "Mac实用工具之iTerm 2"
+date:   2016-04-13 17:00:00 +8:00
+categories: Mac
+tags: [Mac实用工具]
+---
+## iTerm2
+
+`iTerm 2` 是一个终端, 用来代替 `Mac` 自带 `Terminal`, 拥有更强大的功能. 
+
+1. 可以设置主题
+2. 支持画面分割
+3. 快捷键的支持
+4. 快速呼出
+
+[下载地址](https://www.iterm2.com/)
+
+--- 
+
+将 Preferences - Profiles - Terminal - Terminal Emulation - Report Terminal Type 中的 `xterm` 改成 `xterm-256color`, 这样在 `Vim` 显示一些配色方案会好很多.
+
+--- 
+
+快捷键如下
+
+- `cmd` + `t` 新建标签页
+- `cmd` + `w` 关闭当前页
+- `cmd` + `数字` & `方向键` 切换标签页
+- `cmd` + `Enter` 全屏
+- `cmd` + `d` 左右分屏
+- `cmd` + `shift` + `d` 上下分屏
+
+---
+
+快速呼出功能设置
+
+`cmd` + `,` 呼出偏好设置, 在 `Kyes` 中勾选 `Show/hid iTerm2 with a system-wide hotky` 和 其下面的选项, `Hotkey` 为呼出组合键, 下拉选项中是快速呼出界面的配置.
+
+配置在 `Profiles` 中设置
+
+## Oh My Zsh
+
+实用的插件, 可以方便配置酷炫的主题.
+
+下载指令
+
+```
+sh -c "$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)"
+```
+
+下载完毕后, 打开 `~` 目录下的 `.zshrc` 文件
+
+在其中修改
+
+```
+ZSH_THEME="agnoster"
+```
+
+然后将偏好设置中的字体修改为 `12pt Anonymice Powerline` 既可以实现酷炫主题.

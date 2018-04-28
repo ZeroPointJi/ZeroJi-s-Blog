@@ -1,0 +1,167 @@
+---
+title:  "Switf（二）字符串与字符"
+date:   2016-03-01 20:40:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 初始化空字符串
+
+```swift
+var emptyString = "" // 空字符串字面量
+var anotherEmptyString = String() // 空字符串初始化方法
+```
+
+判断字符串是否为空
+
+```swift
+if emptyString.isEmpty {
+    print("Nothing to see here")
+}
+```
+
+## 字符串拼接
+
+```swift
+var variableString = "Horse"
+variableString += " and carriage" // 可以直接用 + 拼接字符串
+print(variableString)
+```
+
+字符串逐个字符输出
+
+```swift
+for character in "Dog!".character { // character 获取字符串中所有字符
+    print(character)
+}
+```
+
+## 字符数组转字符串
+
+首先创建一个字符数组并赋值
+
+```swift
+let catCharacter: [Character] = ["C", "a", "t", "!"];
+```
+
+将字符数组转换为字符串并输出
+
+```swift
+let catString = String(catCharacter)
+print(catString)
+```
+
+## append()函数的使用
+
+`append()` 是将一个字符附加到一个字符串的尾部
+
+```swift
+var welcome = "welcome"
+let exclamationMark: Character = "!"
+welcome.append(exclamationMark)
+//welcome += exclamationMark // 无法直接拼接字符
+print(welcome)
+```
+
+## 字符串插值
+
+```swift
+let multiplier = 3
+let message = "\(multiplier) times 2.5 is \(Double(multiplier)) * 2.5 "
+print(message)
+```
+
+## 转移字符
+
+转义字符`\0`(空字符)、`\\`(反斜线)、`\t`(水平制表符)、`\n`(换行符)、`\r`(回车符)、`\"`(双引号)、`\'`(单引号)
+
+```swift
+let wiseWords = "\"Imagination is more important than knowledge\" - Einstein"
+print(wiseWords)
+```
+
+## 获取字符串中所有字符的数量
+
+`count`属性，获取所有字符的数量
+
+```swift
+let unusualMenagerie = "Koala, Snail, Penguin, Dromedary"
+print("\(unusualMenagerie.characters.count) characters") 
+```
+
+## 字符串索引
+
+```swift
+let greeting = "Guten Tag!"
+print("startIndex is \(greeting[greeting.startIndex])") // .startIndex 获取第一个Character的索引
+print("endIndex is \(greeting[greeting.endIndex.predecessor()])") // .endIndex.predecessor() 获取最后一个Character的前一个索引
+print("startIndex.successor() is \(greeting[greeting.start.Index.successor()])") // .startIndex.successor() 获取第一个索引后面一个索引
+let index = greeting.startIndex.advancedBy(7) // .startIndex.advancedBy(7) 获取第一个索引后的第七个索引
+print("\(greeting[index])") // greeting[index] 获取greeting的第index个索引处的Character
+```
+
+## 所有索引
+
+`indices`获取所有索引，返回一个`Range`类型的值
+
+```swift
+for index in greeting.characters.indices {
+    print("\(greeting[index]) ", terminator: "") // terminator: "" 不换行
+}
+print("") // 换行
+```
+
+## 插入和删除
+
+> 注意：插入和删除方法只能在OS X 10.11及之后的版本中生效!!!!
+
+```swift
+var welcome_String = "hello"
+welcome.insert("!", atIndex: welcome.endIndex.predecessor()) // 在指定位置插入一个字符
+print("welcome_String is \(welcome_String)")
+
+welcome.insertContentsOf(" there".characters, at: welcome.endIndex.predecessor()) // 在一个字符串的指定索引插入一个字符串
+print("welcome_String is \(welcome_String)")
+
+welcome.removeAtIndex(welcome.endIndex.predecessor())
+print("welcome_String is \(welcome_String)")
+
+let range = welcome.endIndex.advancedBy(-6)..<welcome.endIndex // 从最后一个索引前6个索引到最后一个索引前一个索引的范围
+welcome.removeRange(range)
+print("welcome_String is \(welcome_String)")
+```
+
+### 前缀/后缀相等
+
+```swift
+let romeoAndJuliet = [
+    "Act 1 Scene 1: Verona, A public place",
+    "Act 1 Scene 2: Capulet's mansion",
+    "Act 1 Scene 3: A room in Capulet's mansion",
+    "Act 1 Scene 4: A street outside Capulet's mansion",
+    "Act 1 Scene 5: The Great Hall in Capulet's mansion",
+    "Act 2 Scene 1: Outside Capulet's mansion",
+    "Act 2 Scene 2: Capulet's orchard",
+    "Act 2 Scene 3: Outside Friar Lawrence's cell",
+    "Act 2 Scene 4: A street in Verona",
+    "Act 2 Scene 5: Capulet's mansion",
+    "Act 2 Scene 6: Friar Lawrence's cell"
+]
+var act1SceneCount = 0
+for scene in romeoAndJuliet {
+    if scene.hasPrefix("Act 1") { // .hasPrefix 判断是否包含括号中的前缀，返回布尔值
+        ++act1SceneCount
+    }
+}
+print("\(act1SceneCount) scenes in Act 1")
+
+var mansionCount = 0
+var cellCount = 0
+for scene in romeoAndJuliet {
+    if scene.hasSuffix("Capulet's mansion") {
+        ++mansionCount
+    } else {
+        ++cellCount
+    }
+}
+print("\(mansionCount) mansion scenes; \(cellCount) cell scenes")
+```

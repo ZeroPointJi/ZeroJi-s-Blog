@@ -1,0 +1,242 @@
+---
+title:  "Swift (十五) 引用计数"
+date:   2016-03-20 16:15:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 自动引用计数
+
+引用计数仅仅应用于类的实例
+
+```swift
+class Person {
+    let name: String
+    init(name: String) {
+        self.name = name
+        print("\(name) is being initialized")
+    }
+    deinit { // 当实例被将要没销毁时调用
+        print("\(name) is being deinitialized")
+    }
+}
+
+var reference1: Person?
+var reference2: Person?
+var reference3: Person?
+
+reference1 = Person(name: "John Appleseed")
+reference2 = reference1
+reference3 = reference1 // 至此, 一个实例被三个变量引用
+
+reference1 = nil
+reference2 = nil // 至此, 一个实例仅被一个变量引用
+
+reference3 = nil // 实例被销毁, 打印结果
+```
+
+## 类实例之间的循环强引用
+
+当两个类的实例互相持有对方的强引用, 因而每个实例都让对方一直存在. 这就是所谓的强引用.
+
+```swift
+class People {
+    let name: String
+    init(name: String) { self.name = name  }
+        var apartment: Apartment?
+        deinit { print("\(name) is being deinitialized")  
+    }
+}
+class Apartment {
+    let unit: String
+    init(unit: String) { self.unit = unit  }
+        var tenat: People?
+        deinit { print("Apartment \(unit) is being deiniialized")  
+    }
+}
+
+var john: People?
+var unit4A: Apartment?
+john!.apartment = unit4A
+unit4A!.tenat = john
+```
+
+## 解决实例之间的循环强引用
+
+`Swift` 提供了两种办法来解决使用类的属性时遇到的循环强引用问题:
+
+弱引用
+
+```swift
+class NewPerson {
+    let name: String
+    init(name: String) { self.name = name  }
+        var apartment: NewApartment?
+        deinit { print("\(name) is being deinitialized")  
+    }
+}
+class NewApartment {
+    let unit: String
+    init(unit: String) { self.unit = unit  }
+        weak var tenat: NewPerson? // 弱引用
+        deinit { print("Apartment \(unit) is being deiniialized")  
+    }
+}
+
+var john: NewPerson?
+var unit4A: NewApartment?
+
+john = NewPerson(name: "John Appleseed")
+unit4A = NewApartment(unit: "4A")
+
+john!.apartment = unit4A
+unit4A!.tenat = john
+
+john = nil
+unit4A = nil
+```
+
+无主引用
+
+和弱引用类似, 无主引用不会老保持引用的实例, 和弱引用不同的是, 无主引用是永远有值的. 因此, 无主引用总是定义为非可选类型.
+
+如果视图在实例被销毁后, 访问该实例的无主引用, 会触发运行错误. 使用无主引用, 必须确保引用始终指向一个未销毁的实例.
+
+```swift
+class Customer {
+    let name: String
+    var card: CreditCard?
+    init(name: String) {
+        self.name = name
+    }
+    deinit {
+        print("\(name) is being deinitialized")
+     }
+}
+class CreditCard {
+    let number: UInt64
+    unowned let customer: Customer
+    init(number: UInt64, customer: Customer) {
+        self.number = number
+        self.customer = customer
+    }
+    deinit {
+        print("Card #\(number) is being deinitialized")
+    }
+}
+var jim: Customer?
+
+jim = Customer(name: "Jim Appleseed")
+jim!.card = CreditCard(number: 1234_5678_90123_3456, customer: jim!)
+
+jim = nil
+```
+
+## 无主引用以及隐式解析可选属性
+
+两个属性都必须有值, 并且初始化完成后永远不为 `nil`, 需要一个类使用无主引用, 另一个类使用隐式解析可选属性.
+
+```swift
+class Country {
+    let name: String
+    var capitalCity: City!
+    init(name: String, capitalName: String) {
+        self.name = name
+        self.capitalCity = City(name: capitalName, country: self)
+    }
+}
+class City {
+    let name: String
+    unowned let country: Country
+    init(name: String, country: Country) {
+        self.name = name
+        self.country = country
+    }
+}
+var country = Country(name: "Canada", capitalName: "Ottawa") // 可以通过一条语句同事创建 Country 和 City 的实例, 而不产生循环强引用, 并且 capitalCity 的属性能被直接访问, 而不需要通过感叹号来展开它的可选值
+print("\(country.name)'s capital city is called \(country.capitalCity.name)")"'")
+```
+
+## 闭包引起的循环引用
+
+```swift
+class HTMLElement {
+    let name: String
+    let text: String?
+             
+    lazy var asHTML: Void -> String = {
+        if let text = self.text {
+            return "<\(self.name)>\(text)/\(self.name)>"
+        } else {
+            return "<\(self.name) />"
+        }
+    }
+             
+    init(name: String, text: String? = nil) {
+        self.name = name
+        self.text = text
+    }
+
+    deinit {
+        print("\(name) is being deinitialized")
+    }
+}
+
+let heading = HTMLElement(name: "h1")
+let defaultText = "some default text"
+heading.asHTML = {
+    return "<\(heading.name)>\(heading.text ?? defaultText)</\(heading.name)>"
+}
+print(heading.asHTML)
+
+var paragraph: HTMLElement? = HTMLElement(name: "p", text: "hello, world")
+print(paragraph!.asHTML)
+
+paragraph = nil
+```
+
+## 解决闭包引起的循环强引用
+
+`Swift` 有以下要求: 只要在闭包内使用 `self` 成员, 就要使用 `self.someProperty` 或者 `self.someMethod()`.
+
+## 定义捕获列表
+
+```swift
+lazy var someclosure: (Int, String) -> String = {
+    [unowned self, weak delegate = self.deleage!](index: Int, stringToProcess: String) -> String in
+
+}
+lazy var someclosure: Void -> String = {
+    [unowned self, weak delegate = self.delegate!] in
+    
+}
+```
+
+// 弱引用和无主引用
+
+```swift
+class NewHTMLElement {
+    let name: String
+    let text: String?
+             
+    laze var asHTML: Void -> String = {
+        [unowned self]in
+        if let text = self.text {
+            return "<\(self.name)>\(text)</\(self.name)"
+        } else {
+            return "<\(self.name) />"
+        }
+    }
+                             
+    init(name: String, text: String? = nil) {
+        self.name = name
+        self.text = text
+    }
+         
+    deinit {
+       print("\(name) is being deinitialized")
+    }
+}
+
+var newParagraph: NewHTMLElement? = NewHTMLElement(name: "p", text: "hello, world")
+print(newParagraph!.asHTML)
+```

@@ -1,0 +1,286 @@
+---
+title:  "iOS进阶（九）即时通信(1)"
+date:   2016-03-09 21:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 工程中添加XMPP
+
+一 将`XMPP`文件夹拖进工程.
+
+二 修改工程配置
+
+- 点击蓝色工程
+- 选择`TARGETS`下的`XMPP`
+- 选择`Build Settings`
+- 在搜索栏中输入`head`
+- 找到`Search Paths`中的`Header Search Paths`选项,修改值为`/usr/include/libxml2`.
+
+三 添加库
+
+- 选择`Build Phases`
+- 点开`Link Binary With Libraryes`
+- 添加`libresolv.tbd`和`xibxml2.tbd`
+
+四 编译
+
+## 配置服务器文件
+
+在`XMPP`中找到`XMPPConfig.h`文件.
+
+修改其中的值为本地服务器值.
+
+```objc
+//openfire服务器IP地址
+#define  kHostName      @"10.80.2.168"
+//openfire服务器端口 默认5222
+#define  kHostPort      5222
+//openfire域名
+#define kDomin @"chenqingyuandemacbook-pro.local"
+//resource
+#define kResource @"iOS"
+```
+
+## 基础界面搭建和完成登录界面和注册界面
+
+一 基础界面搭建
+
+1. 在`main.storyboard`中添加一个`NavigationController`,再添加一个`TableViewController`.
+
+2. 设置`NavigationController`为程序启动界面.
+
+3. 拖拽第一个`TableViewController`中的`cell`到第二个`TableViewController`,在出现的选项中选择`show`.
+
+4. 创建两个视图控制器,分别为`ListTableViewController`和`ChatTableViewController`.
+
+5. 关联`main.storyboard`中的两个表视图控制器和创建的两个表视图控制器.
+
+6. 创建一个`LoginAndRegist.storyboard`,添加一个`NavigationController`,并指定`NavigationController`为启动界面.
+
+7. 删除其中的`TableViewController`,添加两个`ViewController`并创建`LoginViewControll`和`RegistViewController`与其关联.
+
+8. 让`NavigationController`指向`LoginViewController`,并在两个视图控制器中布局.
+
+9. 使`LoginViewController`中的`注册`按钮`push`出`RegistViewController`.
+
+10. 最后拖线关联属性和方法.
+
+二 注册界面
+
+先创建一个单例`XMPPManager`类,来负责通信.
+
+声明单例方法并在`.m`中初始化单例.
+
+```objc
+static XMPPManager *manager = nil;o
+
++ (XMPPManager *)shareInstance
+{
+    @synchronized(self) {
+        if (manager == nil) {
+            manager = [[XMPPManager alloc] init];
+        }
+    }
+    return manager;
+}
+```
+
+在`.h`文件中引入头文件`XMPPFramework.h`,因为头文件中包含了`XMPP`中所有类的头文件.
+
+声明一个属性,保存注册或者登录时需要告知服务器账户的密码.
+
+```objc
+@property (copy, nonatomic) NSString *password; 
+```
+
+声明一个属性
+
+```objc
+// 连接客户端与服务器的通信管道
+@property (strong, nonatomic) XMPPStream *stream;
+```
+
+初始化`stream`.
+
+```objc
+- (instancetype)init
+{
+    if (self = [super init]) {
+        self.stream = [[XMPPStream alloc] init];
+        // 添加代理
+        [self.stream addDelegate:self delegateQueue:dispatch_get_main_queue()];
+        // 连接服务器需要通过通信管道，告知连接的服务器名称，也可以认为是域名。
+        self.stream.hostName = kHostName;
+        // 服务器端口
+        self.stream.hostPort = kHostPort;
+    }
+    return self;
+}
+```
+
+声明并封装一个连接服务器的方法.
+
+```objc
+- (void)connectServeWithUsername:(NSString *)username
+{
+    // 创建身份标识，告诉服务器，谁连接的服务器。
+    XMPPJID *jid = [XMPPJID jidWithUser:username domain:kDomin resource:kResource];
+    self.stream.myJID = jid; // 将客户端的信息告诉通信管道。
+    // 连接服务器
+    NSError *error = nil;
+    if (self.stream.isConnected) {
+        [self.stream disconnect]; // 断开连接
+    }
+    [self.stream connectWithTimeout:10 error:&error];
+}
+```
+
+声明并实现一个当注册时连接服务器的方法
+
+```objc
+- (void)registWithUsername:(NSString *)username password:(NSString *)password
+{
+    self.password = password;
+    // 连接服务器
+    [self connectServeWithUsername:username];
+    self.isRegist = YES;
+}
+```
+
+最后遵守协议`XMPPStreamDelegate`,并实现代理方法判断连接是否成功.
+
+```objc
+#pragma mark - XMPP Stream Delegate -
+// 连接成功的方法
+- (void)xmppStreamDidConnect:(XMPPStream *)sender
+{
+    NSLog(@"连接成功");
+}
+
+// 连接失败的方法
+- (void)xmppStreamConnectDidTimeout:(XMPPStream *)sender{
+     NSLog(@"连接超时");
+
+}
+```
+
+在`RegistViewController`中添加代理,用来判断是否注册成功,并且遵守`XMPPStreamDelegate`协议.
+
+```objc
+    [[XMPPManager shareInstance].stream addDelegate:self delegateQueue:dispatch_get_main_queue()];
+```
+
+在`注册`按钮关联的方法中获取注册的用户名和密码,并且调用单例的注册方法.
+
+```objc
+- (IBAction)regist:(id)sender {
+    // 获取注册的用户名和密码
+    NSString *username = self.usernameTF.text;
+    NSString *password = self.passwordTF.text;
+    // 即时通信，每一次消息的发送都要连接服务器，客户端与服务器需要不断地连接，我们称为长连接。
+    [[XMPPManager shareInstance] registWithUsername:username password:password];
+}
+```
+
+最后实现代理方法,完成注册.
+
+```objc
+#pragma mark - XMPP Stream Delegate -
+// 注册成功执行的方法
+- (void)xmppStreamDidRegister:(XMPPStream *)sender
+{
+    NSLog(@"注册成功");
+    [self.navigationController popViewControllerAnimated:YES];
+}
+
+// 注册失败
+- (void)xmppStream:(XMPPStream *)sender didNotRegister:(DDXMLElement *)error
+{
+    NSLog(@"注册失败");
+}
+```
+
+注册界面完成.
+
+## 完成登录界面
+
+在单例`XMPPManager`中,添加一个属性`isRegist`来判断需要发送注册消息还是登录消息.
+
+```objc
+@property (nonatomic) BOOL isRegist;
+```
+
+声明并实现一个登录方法.
+
+```objc
+- (void)loginWithUsername:(NSString *)username password:(NSString *)password
+{
+    self.password = password;
+    // 连接服务器
+    [self connectServeWithUsername:username];
+    self.isRegist = NO;
+}
+```
+
+在注册方法中设置`isRegist`为`YES`.
+
+在`- (void)xmppStreamDidConnect:(XMPPStream *)sender`方法中,判断是发送注册消息还是登录消息,用`isRegist`判断.
+
+```objc
+if (self.isRegist) {
+    // 注册
+    [self.stream registerWithPassword:self.password error:nil];
+} else {
+    // 验证
+    [self.stream authenticateWithPassword:self.password error:nil];
+}
+```
+
+单例中的修改完成.
+
+在`loginViewcontroller`中的登录方法中向单例发送登录方法.
+
+```objc
+- (IBAction)login:(UIButton *)sender {
+    NSString *username = self.usernameTF.text;
+    NSString *password = self.passwordTF.text;
+    [[XMPPManager shareInstance] loginWithUsername:username password:password];
+}
+```
+
+在`viewDidLoad`中添加代理,遵守协议并实现代理方法.
+
+```objc
+    [[XMPPManager shareInstance].stream addDelegate:self delegateQueue:dispatch_get_main_queue()];
+
+#pragma mark - XMPP Stream Delegate -
+// 登录成功的方法
+- (void)xmppStreamDidAuthenticate:(XMPPStream *)sender
+{
+    NSLog(@"登录成功");
+    // 需要将客户端的在线状态发送给服务器
+    XMPPPresence *presence = [XMPPPresence presenceWithType:@"available"];
+    // 将信息发送出去
+    [[XMPPManager shareInstance].stream sendElement:presence];
+    [self dismissViewControllerAnimated:YES completion:nil];
+}
+
+// 验证失败的方法
+- (void)xmppStream:(XMPPStream *)sender didNotAuthenticate:(DDXMLElement *)error
+{
+    NSLog(@"验证失败");
+}
+```
+
+还有最后一步,因为`LoginAndRegist.storyboard`不是系统启动视图,所以需要在`ListTableViewController`的`viewDidLoad`方法中退出登录界面.
+
+```objc
+    // 现获取storyboard
+    UIStoryboard *storyboard = [UIStoryboard storyboardWithName:@"LoginAndRegist" bundle:[NSBundle mainBundle]];
+    // 获取启动的视图控制器
+    UINavigationController *naVC = [storyboard instantiateInitialViewController];
+    // 模态弹出
+    [self presentViewController:naVC animated:NO completion:nil];
+```
+
+登录界面完成!

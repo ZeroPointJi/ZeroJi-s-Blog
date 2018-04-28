@@ -1,0 +1,263 @@
+---
+title:  "Switf（五）函数"
+date:   2016-03-07 18:30:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 单参函数
+
+```swift
+func sayHello(personName: String) -> String 
+{
+    let greet = "Hello, " + personName + "!"
+    return greet;
+}
+print(sayHello("Anna"))
+
+func sayHelloAgain(personName: String) -> String
+{
+    return "Hello again, " + personName + "!"
+}
+```
+
+## 无参函数
+
+```swift
+func sayHelloWorld() -> String
+{
+    return "Hello world"
+}
+print(sayHelloWorld())
+```
+
+## 多参数函数
+
+```swift
+func sayHello(personName: String, alreadyGreeted: Bool) -> String {
+    if alreadyGreeted {
+       return sayHello(personName)
+    } else {
+       return sayHelloAgain(personName)
+    }
+
+}
+```
+
+## 无返回值函数
+
+```swift
+func sayGoodbye(personName: String)
+{
+    print("Goodbye, \(personName)")
+}
+sayGoodbye("Dave")
+```
+
+## 多重返回值函数
+
+```swift
+func minMax(array: [Int]) -> (min: Int, max: Int) {
+    var currentMin = array[0]
+    var currentMax = array[0]
+    for value in array[1..<array.count] {
+        if value < currentMin {
+            currentMin = value
+        } else if value > currentMax {
+            currentMax = value
+        }
+    }
+    return (currentMin, currentMax)
+}
+let bounds = minMax([8, -6, 2, 109, 3, 71])
+print("min is \(bounds.min) and max is \(bounds.max)")
+```
+
+## 可选元祖返回类型
+
+```swift
+func minMax(array: [Int]) -> (min: Int, max: Int)? 
+{
+    if array.isEmpty { return nil }
+    var currentMin = array[0]
+    var currentMax = array[0]
+    for value in array[1..<array.count>] {
+        if value < currentMin {
+            currentMin = value
+        } else if value > currentMax {
+            currentMax = value
+        }
+    }
+    return (currentMin, currentMax)
+}
+if let bounds = minMax([8, -7, 2, 109, 3, 71]) {
+    print("min is \(bounds.min") and max is \(bounds.max)")
+}
+```
+
+## 函数参数名称
+
+```swift
+fuc someFunction(firstParameterName: Int, secondParameterName: Int) {
+    
+}
+someFunction(1, secondParameterName: 2)
+```
+
+一般来说，第一个参数省略外部参数名，第二个以及随后的参数使用其局部参数名作为外部参数名。
+
+## 制定外部参数名
+
+```swift
+func someFunction(externalParameterName localParameterName: Int) {
+    
+}
+
+func sayHello(to person: String, and anotherPerson: String) -> String {
+    return "Hello \(person) and \(anotherPerson)"
+}
+print(sayHello(to: "Bill", and: "Ted"))
+```
+
+## 忽略外部参数名
+
+```swift
+func someFunction(firstParameterName: Int, _ secondParameterName: Int) {
+    
+}
+someFunction(1, 2)
+```
+
+## 默认参数值
+
+```swift
+func someFunction(parameterWithDefault: Int = 12) {
+    print(parameterWithDefault)
+}
+someFunction()
+someFunction(6)
+```
+
+## 可变参数
+
+```swift
+func arithmeticMean(numbers: Double...) -> Double {
+    var total = 0.0
+    for nubmer in numbers {
+        total += number
+    }
+    return total / Double (numbers.count)
+}
+arithmeticMean(1, 2, 3, 4, 5)
+arithmeticMean(3, 8.25, 18.75)
+```
+
+## 常量参数和变量参数
+
+参数默认是常量参数
+
+```swift
+func alignRight(var string: String, totalLength: Int, pad: character) -> String {
+    let amounToPad = totalLength - string.characters.counot
+    if amounToPad < 1 {
+        return string
+    }
+    let padString = String(pad)
+    for _ in 1...amounToPad
+    {
+        string = padString + string
+    }
+    return string
+}
+let originalString = "hello"
+let paddedString = alignRight(originalString, totalLength: 10, pad: "-")
+print (paddedString)
+```
+
+## 输入输出函数
+
+```swift
+func swapTwoInts(inout a: Int, inout _ b: Int) {
+    let temporaryA = a
+    a = b
+    b = temporaryA
+}
+var someInt = 3
+var anotherInt = 107
+swapTwoInts(&someInt, &anotherInt)
+print("someInt is noew \(someInt), and anotherInt is now \(anotherInt)")
+```
+
+## 函数类型
+
+```swift
+func addTwoInts(a: Int, _ b: Int) -> Int { // (Int, Int) -> Int 类型的函数
+    return a + b
+}
+func multiplyTwoInts(a: Int, _ b: Int) -> Int { // 同上
+    return a * b
+}
+
+func printHelloWorld() { void -> void类型的函数
+    print("hello, world")
+}
+```
+
+## 使用函数类型
+
+```swift
+var mathFunction: (Int, Int) -> Int = addTwoInts
+print("Result: \(mathFunction(2, 3))")
+
+mathFunction = multiplyTwoInts
+print("Result: \(mathFunction(2, 3))")
+
+let anotherMathFunction = addTwoInts // 自动推断为(Int, Int) -> Int类型
+```
+
+## 函数类型作为参数类型
+
+```swift
+func printMathResult(mathFunction: (Int, Int) -> Int, _ a: Int, _ b: Int){
+    print("Result: \(mathFunction(a, b))")
+}
+printMathResult(addTwoInts, 3, 5)
+```
+
+## 函数类型作为返回类型
+
+```swift
+func stepForward(input: Int) -> Int {
+    return input + 1
+}
+funcStepBackward(input: Int) -> {
+    return input - 1
+}
+func chooseStepFunction(backwards: Bool) -> (Int) -> Int {
+    return backwards ? stepBackward : stepForward
+}
+
+var currentValue = 3
+let moveNearerToZero = chooseStepFunction(currentValue > 0)
+print("Counting to zero:")
+while currentValue != 0 {
+    print("\(currentValue)...")
+}
+print("zero")
+```
+
+## 嵌套函数
+
+```swift
+func chooseStepFunction(backwards: Bool) -> (Int) -> Int {
+    func stepForward(input: Int) -> Int { return input + 1 }
+    func stepBackward(input: Int) -> Int { return input - 1 }
+    return backwards ? stepBackward : stepForward
+}
+
+var currentValue = 3
+let moveNearerToZero = chooseStepFunction(currentValue > 0)
+print("Counting to zero:")
+while currentValue != 0 {
+    print("\(currentValue)...")
+}
+```

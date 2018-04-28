@@ -1,0 +1,255 @@
+---
+title:  "iOS进阶（十六）动画"
+date:   2016-03-16 19:50:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 头尾式动画
+
+iOS 4.0之前, 如果想要实现动画, 采用的都是类方法.
+
+除了需要设定改变视图的是哪个属性做动画之外, 还需要实现方法, 来标记动画的开始和结束.
+
+```objc
+UIView *v = [UIView]alloc] initWithFrame:CGRectMake(100, 100, 100, 100)];
+v.backgroundColor = [UIColor redColor];
+[self.view addSubview:v];
+            
+// 开始设置 UIView 基础动画
+[UIView beginAnimations:@"strenth" context:nil];
+
+// 设置动画时长为2s
+[UIView setAnimationDuration:2];
+
+// 设置重复次数
+[UIView setAnimationRepeatCount:3];
+
+// 设置动画播放的回调对象
+//    [UIView setAnimationDelegate:self];
+
+// 设置动画过渡方式
+[UIView setAnimationCurve:UIViewAnimationCurveEaseInOut];
+// 第一个参数设定动画执行方向, 第二个参数制定动画视图, 第三个参数制定是否使用图片缓存, 如果是YES, 效果更佳
+[UIView setAnimationTransition:UIViewAnimationTransitionFlipFromLeft forView:v cache:YES];
+
+// 设置开始方法和结束方法
+//    [UIView setAnimationWillStartSelector:@selector(animationDidStart: context:)];
+//    [UIView setAnimationDidStopSelector:@selector(animationDidStop:finished:context:)];
+
+// 改变它的 frame 的 x, y 的值, 即设置动画的最终值
+//    v.frame = CGRectMake(200, 200, 100, 100);
+
+// 改变颜色
+//    v.backgroundColor = [UIColor blueColor];
+
+// 改变透明度
+//    v.alpha = 0.0;
+
+//v.transform = CGAffineTransformMakeScale(2, 0.5);
+//    v.transform = CGAffineTransformMakeRotation(M_PI);
+
+// 开始播放动画
+[UIView commitAnimations];
+```
+因为设置了开始方法和结束方法, 所以要实现开始结束方法.
+
+```objc
+- (void)animationDidStart:(NSString *)animationID context:(void *)context {
+    NSLog(@"%@ %@", animationID, context);
+}
+
+- (void)animationDidStop:(NSString *)animationID finished:(NSNumber *)finished context:(void *)context {
+    NSLog(@"%@ %@", animationID, context);
+}
+```
+
+## block动画
+
+简单动画
+
+参数1: 动画持续时间, 参数2: 动画执行体, 参数3: 动画结束时执行的block
+
+```objc
+[UIView animateWithDuration:3 animations:^{
+    NSLog(@"start");
+    v.center = self.view.center;
+} completion:^(BOOL finished) {
+    if (finished) {
+        NSLog(@"stop");
+    }
+}];
+```
+
+复杂动画
+
+参数1: 动画持续时间, 参数2: 动画执行前延迟的时间, 参数3: 动画执行方式, 参数4: 动画执行体, 参数5: 动画结束时执行的`block`.
+
+```objc
+[UIView animateWithDuration:0.5 delay:3 options:UIViewAnimationOptionRepeat animations:^{
+    NSLog(@"start");
+    v.center = self.view.center;
+} completion:^(BOOL finished) {
+    if (finished) {
+        NSLog(@"stop");
+    }
+}];
+```
+
+关键帧动画
+
+```objc
+[UIView animateKeyframesWithDuration:3 delay:0.0 options:UIViewKeyframeAnimationOptionAutoreverse animations:^{
+    // startTime 和 relativeDuration 都是相对于整个关键帧动画的持续时间的百分比
+    [UIView addKeyframeWithRelativeStartTime:0.0 relativeDuration:0.25 animations:^{
+        v.center = self.view.center;
+    }];
+} completion:^(BOOL finished) {
+    if (finished) {
+        NSLog(@"finished");
+    }
+}];
+```
+
+spring动画
+
+```objc
+[UIView animateWithDuration:3.0 // 动画时长
+                      delay:0.0 // 动画延迟
+     usingSpringWithDamping:0.5 // 类似弹簧效果 0~1
+      initialSpringVelocity:15.0 // 初始速度
+                     options:UIViewAnimationOptionCurveEaseOut // 动画过度效果
+                  animations:^{ // 执行的block
+                        v.center = self.view.center;
+                    } completion:^(BOOL finished) { // 结束后执行的block
+                        if (finished) {
+                            NSLog(@"finished");
+                        }
+                    }];
+```
+
+## CoreAnimation动画
+
+CoreAnimation 基本介绍
+
+- `CoreAnimation` 动画位于 `iOS` 框架的 `Media` 层
+- `CoreAnimation` 动画实现需要添加 `QuartzCore.Framework`
+- `CoreAnimation` 基本上是 `layer Animation`
+
+CALayer 基本介绍
+
+- `CALayer` 负责绘制, 提供 `UIView` 需要展示的内容, 不能交互.
+- `UIView` 负责交互, 显示 `CALayer` 绘制的内容.
+
+`CALayer` 层是屏幕上的一个矩形区域, 在每一个 `UIView` 中都包含一个根`CALayer`, 在 `UIView` 上的所有视觉效果都是在这个 `Layer` 上进行的.
+
+`CALayer` 外形特征主要包括:
+
+1. 层的大小尺寸
+2. 背景颜色
+3. 内容(可以填充图片或者使用 `Core Graphics` 绘制的内容)
+4. 矩形是否使用圆角
+5. 矩形是否有阴影
+
+`Layer` 有很多种, 最常用也是最基本的是 `CALayer`, 当然还包括其他子类:
+
+- `CAScrollerLayer` 简化显示层的一部分
+- `CATextLayer` 文本层
+- `CAGradientLayer` `CAShapeLayer` 等等
+
+`UIView` 是 `iOS` 系统中界面元素的基础, 所有的界面元素都是继承自它. 它本身完全是由 `CoreAnimation` 来实现的. 它真正的绘制部分, 是由一个 `CALayer` 类来管理的. `UIView` 本身更像是一个 `CALayer` 的管理器, 访问它的跟绘图和跟坐标有关的属性, 例如 `frame`, `bounds` 等, 实际上内部都是在访问它所包含的 `CALayer` 的相关属性.
+
+`UIView` 有个重要属性 `layer`, 可以返回它的主 `CALayer` 实例.
+
+`UIView` 的 `CALayer` 类似 `UIView` 的子 `View` 树形结构, 也可以向它的 `layer` 上添加子 `layer`, 来完成某些特殊的表示. 即 `CALayer` 层是可以嵌套的.
+
+`CALayer` 的常用属性:
+
+- `cornerRadius` 圆角
+- `shadowColor` 阴影颜色
+- `shadowOffset` 阴影偏移距离
+- `shadowRadius` 阴影模糊程度
+- `shadowOpacity` 阴影透明度
+- `borderWidth` 边框宽度
+- `borderColor` 边框颜色
+- `anchorPoint` 锚点
+- `position` 当前位置信息
+- `transfrom` 使 `CALayer` 产生3D空间内的平移, 缩放, 旋转等变化
+
+`CABasicAnimation` 动画
+
+```objc
+    // 创建一个 basic 动画
+    // keyPath 必须填写 CALayer 能做动画的属性, 或者这些属性中的值.
+    //    CABasicAnimation *basic = [CABasicAnimation animationWithKeyPath:@"position.y"];
+    //    CABasicAnimation *basic = [CABasicAnimation animationWithKeyPath:@"cornerRadius"];
+    CABasicAnimation *basic = [CABasicAnimation animationWithKeyPath:@"backgroundColor"];
+    basic.toValue = (__bridge id _Nullable)([UIColor redColor].CGColor);
+    
+    // NSNumber 这个类的作用是将基本数据类型与对象类型实现互转
+    // NSValue 这个类的作用是将结构体与对象类型实现互转
+    //    basic.fromValue = @(self.imageView.layer.position.y);
+    //    basic.toValue = @400;
+    //    basic.byValue = @300;
+    
+    basic.duration = 3;
+    basic.repeatCount = 2;
+    //    basic.delegate = self;
+    
+    [self.imageView.layer addAnimation:basic forKey:@"y动画"];
+```
+
+如果想在动画之后保持动画动画结束的状态, 可以实现结束之后的代理方法, 来将状态保存, 直接修改 `layer` 的状态是不可取的.
+
+```objc
+- (void)animationDidStop:(CAAnimation *)anim finished:(BOOL)flag
+{
+    if (flag) {
+        // 保持动画最后的结束状态
+        CGPoint position = self.imageView.layer.position;
+        position.y = 400;
+        self.imageView.layer.position = position;
+    }
+
+}
+```
+
+`CAKeyframeAnimation` 动画
+
+```objc
+    CAKeyframeAnimation *keyFrame = [CAKeyframeAnimation animationWithKeyPath:@"position.x"];
+    CGFloat center = self.imageView.layer.position.x;
+    CGFloat left = center - 5;
+    CGFloat right = center + 5;
+    // 转换为对象
+    NSNumber *c = [NSNumber numberWithFloat:center];
+    NSNumber *l = [NSNumber numberWithFloat:left];
+    NSNumber *r = [NSNumber numberWithFloat:right];
+    keyFrame.values = @[c, l, c, r, c, l, c, r, c, l, c, r, c, l, c];
+    keyFrame.duration = 0.1;
+    keyFrame.repeatCount = 10;
+    
+    [self.imageView.layer addAnimation:keyFrame forKey:@"晃动"];
+```
+
+`CAAnimationGroup` 动画
+
+```objc
+    // 创建组动画
+    CAAnimationGroup *group = [CAAnimationGroup animation];
+    group.duration = 3;
+    
+    // 开始创建内部动画
+    CABasicAnimation *basic = [CABasicAnimation animationWithKeyPath:@"position.y"];
+    basic.duration = 2;
+    basic.toValue = @400;
+    
+    // 第二个动画
+    CABasicAnimation *basic1 = [CABasicAnimation animationWithKeyPath:@"opacity"];
+    basic1.duration = 3;
+    basic1.toValue = @0.3;
+    
+    // 将创建的内部动画加入组动画中
+    group.animations = @[basic, basic1];
+    
+    [self.imageView.layer addAnimation:group forKey:@"屌爆"];
+```

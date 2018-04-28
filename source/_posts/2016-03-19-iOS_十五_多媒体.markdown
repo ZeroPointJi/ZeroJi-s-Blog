@@ -1,0 +1,336 @@
+---
+title:  "iOS进阶（十五）多媒体"
+date:   2016-03-19 09:50:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 音频
+
+1. `System Sound Services` (系统声音服务)
+2. `OpenAL` (跨平台的太远的音频处理接口)
+3. `Audio Queue Services` (播放和录制音频服务)
+4. `AVAudioPlayer` (高级音频播放器)
+
+## System Sound Services
+
+`System Sound Services` 是最底层也是最简单的音乐播放服务, 通过调用 `AudioServicesPlaySystemSound` 这个函数就可以播放一些简单的音频文件. 适合比方一些很小的提示或者警告音.
+
+局限性:
+
+1. 声音长度要小于 `30` 秒.
+2. 音频文件格式需要: `IMA4`.
+3. 不能控制播放的进度.
+4. 调用方法后立即播放声音.
+5. 没有循环播放和立体声音播放.
+
+```objc
+CFBundleRef mainBundle;
+SystemSoundID soundFileObject;
+mainBundle = CGBundleGetMainBundle();
+CGURLRef soudFileURLRef = CGBundleCopyResourceURL(mainBundle, CGSTR("duang"), CGSTR("wac"), NULL);
+AudioServicesCreateSystemSoundID(soundFileURLRef, &soundFileObject);
+AudioServicesPlaySystemSound(soundFileObject);
+```
+
+## OpenAL
+
+`OpenAL` 是一套跨平台的开源的音频处理借口, 最适合开发游戏的音频.
+
+## Audio Queue Services
+
+`Audio Queue Services` 主要用来实现录制音频, 为了简化音频文件的处理, 通常还需要使用 `AudioFileServices`.
+
+## AVAudioPlayer
+
+我们可以把 `AVAudioPlayer` 看做是一个高级播放器, 它支持广泛的音频格式.
+
+`AVAudioPlayer` 的优势:
+
+1. 支持更多的格式
+2. 可以播放任意长度的音频文件
+3. 支持循环播放
+4. 可以同步播放多个音频文件
+5. 控制播放进度以及从音频的任意一点开始播放
+
+## AVAudioPlayer 的使用
+
+`AVAudioplayer` 包含在 `AVFoundation` 框架中, 所以开发的时候需要先导入音频的框架 `AVFoundation.framework`.
+
+```objc
+    // 获取音乐地址
+    NSString *path = [[NSBundle mainBundle] pathForResource:self.musicName ofType:@"mp3"];
+    NSURL *url = [NSURL fileURLWithPath: path];
+    
+    // 初始化播放器
+    self.player = [[AVAudioPlayer alloc] initWithContentsOfURL:url error:nil];
+    
+    // 开始播放
+    self.player play];
+    
+    // 指定进度条最大值为歌曲总时间
+    self.progressSlider.maximumValue = [self.player duration];
+    
+    // 定义一个计时器来获取播放时间
+    [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(updateProgress) userInfo:nil repeats:YES];
+    
+    // 开始播放时, 指定一个音量初始值
+    self.player.volume = self.volumnSlider.value;
+```
+
+实现定时器方法
+
+```objc
+// 更新进度
+- (void)updateProgress
+{
+    self.progressSlider.value = [self.player currentTime];
+}
+```
+
+实现调节音量大小方法
+
+```objc
+// 音量大小
+- (IBAction)changeVolumn:(UISlider *)sender {
+    self.player.volume = sender.value;
+}
+```
+
+实现播放和暂停, 在播放暂停时实现切换按钮图片.
+
+```objc
+// 播放和暂停
+- (IBAction)playAndStop:(UIButton *)sender {
+    if (self.player.playing) {
+        [sender setImage:[UIImage imageNamed:@"player_play"] forState:UIControlStateNormal];
+        [sender setImage:[UIImage imageNamed:@"player_play_hl"] forState:UIControlStateHighlighted];
+        [self.player pause];
+    } else {
+        [sender setImage:[UIImage imageNamed:@"player_pause"] forState:UIControlStateNormal];
+        [sender setImage:[UIImage imageNamed:@"player_pause_hl"] forState:UIControlStateHighlighted];
+        [self.player play];
+    }
+}
+```
+
+实现拖动进度条方法
+
+```objc
+// 拖动进度条方法
+- (IBAction)changeProgress:(UISlider *)sender {
+    [self playAndStop:nil];
+    self.player.currentTime = sender.value;
+    [self playAndStop:nil];
+
+}
+```
+
+实现快进和快退方法
+
+```objc
+// 快退
+- (IBAction)rew:(UIButton *)sender {
+    self.player.currentTime -= 3;
+    self.progressSlider.value = self.player.currentTime;
+}
+
+// 快进
+- (IBAction)speed:(UIButton *)sender {
+    self.player.currentTime += 3;
+    self.progressSlider.value = self.player.currentTime;
+
+}
+```
+
+## AVPlayer
+
+`AVPlayer` 既能播放视频也能播放音频, 属性和 `AVAudioPlayer` 差不多, 只是时间用 `CMTime` 类来表示.
+
+`AVPlayer` 实现音频播放
+
+```objc
+//
+//  MusicViewController.m
+//  AVPlayerMusic
+//
+//  Created by zero on 16/3/18.
+//  Copyright © 2016年 zero. All rights reserved.
+//
+
+#import "MusicViewController.h"
+#import "MusicManager.h"
+
+@interface MusicViewController ()
+
+@property (weak, nonatomic) IBOutlet UIImageView *iconImageView;
+@property (weak, nonatomic) IBOutlet UILabel *musicNameLabel;
+@property (weak, nonatomic) IBOutlet UILabel *currentTimeLabel;
+@property (weak, nonatomic) IBOutlet UISlider *progressBarSlider;
+@property (weak, nonatomic) IBOutlet UIButton *playAndStopButton;
+
+@property (nonatomic) NSInteger playIndex;
+
+@end
+
+@implementation MusicViewController
+
+- (void)setPlayIndex:(NSInteger)playIndex
+{
+    if (playIndex == self.dataArr.count) {
+        _playIndex = 0;
+    } else if (playIndex == -1) {
+        _playIndex = self.dataArr.count - 1;
+    } else {
+        _playIndex = playIndex;
+    }
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+         
+    AVPlayerItem *item = [self createAVPlayerItem];
+    
+    self.player = [[AVPlayer alloc] initWithPlayerItem:item];
+    
+    [self.player play];
+    
+    self.progressBarSlider.value = 0;
+    
+    //设置图片为圆形
+    self.iconImageView.layer.cornerRadius = 120;
+    // 裁剪图层以外的内容
+    self.iconImageView.layer.masksToBounds = YES;
+    
+    [self.playAndStopButton setImage:[UIImage imageNamed:@"player_pause"] forState:UIControlStateNormal];
+    [self.playAndStopButton setImage:[UIImage imageNamed:@"player_pause_hl"] forState:UIControlStateHighlighted];
+    [self.playAndStopButton setImage:[UIImage imageNamed:@"player_play"] forState:UIControlStateSelected];
+    
+    [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(playing) userInfo:nil repeats:YES];
+
+}
+
+- (AVPlayerItem *)createAVPlayerItem
+{
+    // 根据获取的位置信息找到歌曲模型
+    Music *music = self.dataArr[self.playIndex];
+    
+    NSString *path = [[NSBundle mainBundle] pathForResource:music.name ofType:@"mp3"];
+    
+    NSURL *url = [NSURL fileURLWithPath:path];
+    
+    AVPlayerItem *item = [[AVPlayerItem alloc] initWithURL: url];
+    
+    [self setMusic:music];
+    
+    return item;
+}
+
+- (void)setMusic:(Music *)music
+{
+    self.iconImageView.image = [UIImage imageNamed:music.pic];
+    self.musicNameLabel.text = music.name;
+}
+
+- (void)playing
+{
+    // 判断是否存在播放资源, 加载播放资源是否已经完毕, 如果完毕, 执行 playing 方法, 否则不执行
+    if (self.player.currentItem.currentTime.timescale == 0 || self.player.currentItem.duration.timescale == 0) {
+        return;
+    }
+        
+    // 获取总时间
+    long long int allTime = self.player.currentItem.duration.value / self.player.currentItem.duration.timescale;
+    self.progressBarSlider.maximumValue = allTime;
+    
+    // 获取当前时间
+    long long int currentTime = self.player.currentTime.value / self.player.currentTime.timescale;
+    self.progressBarSlider.value = currentTime;
+    
+    // 当进度条到最后时, 自动播放下一首
+    if (currentTime == allTime) {
+        [self nextMusic:nil];
+    }
+    
+    // 计算得到剩余时间
+    self.currentTimeLabel.text = [NSString stringWithFormat:@"%02lld:%02lld", (allTime - currentTime) / 60, (allTime - currentTime) % 60];
+    
+    // 如果播放器正在播放音乐, 才执行图像动画
+    if (self.player.rate == 1.0) {
+        [UIView beginAnimations:@"change" context:nil];
+        [UIView setAnimationDuration:0.1];
+        [UIView setAnimationCurve:UIViewAnimationCurveLinear];
+        self.iconImageView.transform = CGAffineTransformRotate(self.iconImageView.transform, 0.05);
+    }
+}
+
+- (IBAction)changeProgress:(UISlider *)sender
+{
+    CMTime currentTime = self.player.currentTime;
+    currentTime.value = currentTime.timescale * sender.value;
+    [self.player seekToTime:currentTime];
+}
+
+- (IBAction)playAndStop:(UIButton *)sender
+{
+    self.playAndStopButton.selected = !self.playAndStopButton.selected;
+    if (self.player.rate == 1.0) {
+        [self.playAndStopButton setImage:[UIImage imageNamed:@"player_play_hl"] forState:UIControlStateHighlighted];
+        [self.player pause];
+    } else {
+        [self.playAndStopButton setImage:[UIImage imageNamed:@"player_pause_hl"] forState:UIControlStateHighlighted];
+        [self.player play];
+    }
+}
+
+- (IBAction)nextMusic:(UIButton *)sender
+{
+    self.playIndex++;
+    AVPlayerItem *item = [self createAVPlayerItem];
+    [self.player replaceCurrentItemWithPlayerItem: item];
+
+}
+
+- (IBAction)previousMusic:(UIButton *)sender
+{
+    self.playIndex--;
+    AVPlayerItem *item = [self createAVPlayerItem];
+    [self.player replaceCurrentItemWithPlayerItem: item];
+}
+@end
+```
+
+视屏播放使用的也是 `AVPlayer`, 除了创建方式与音频不同, 其他方法基本相同.
+
+```objc
+    // 获取网络连接字符串
+    NSString *str = @"http://122.228.237.104/ws.acgvideo.com/3/50/6319180-1hd.mp4?wsTime=1458315227&wsSecret2=9242f16dd0079f5e9f46cb3ef76360d7&oi=2015071171&internal=1&or=2061576138&wshc_tag=0&wsts_tag=56ebe88d&wsid_tag=655f8d06&wsiphost=ipdbm";
+    
+    NSURL *url = [NSURL URLWithString:str];
+    
+    AVPlayerItem *item = [[AVPlayerItem alloc] initWithURL: url];
+    
+    self.player = [[AVPlayer alloc] initWithPlayerItem: item];
+    
+    // 创建图层, 作为视频播放的载体
+    AVPlayerLayer *layer = [AVPlayerLayer playerLayerWithPlayer:self.player];
+    layer.frame = CGRectMake(0, 0, [UIScreen mainScreen].bounds.size.width, 300);
+    
+    // 使播放内容适应播放窗口的大小
+    layer.videoGravity = AVLayerVideoGravityResizeAspect;
+    layer.backgroundColor = [UIColor blackColor].CGColor;
+    
+    [self.view.layer addSublayer:layer];
+    
+    [self.player play];
+```
+
+拖动进度条方法
+
+```objc
+// 拖动进度条方法
+- (IBAction)changeProgress:(UISlider *)sender {
+    [self.player seekToTime:CMTimeMake(self.progressSlider.value * self.player.currentItem.duration.value, self.player.currentItem.duration.timescale) completionHandler:^(BOOL finished) {
+        [self.player play];
+    }];
+}
+```

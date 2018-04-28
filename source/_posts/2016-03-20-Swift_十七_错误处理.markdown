@@ -1,0 +1,119 @@
+---
+title:  "Swift (十七) 错误处理"
+date:   2016-03-22 15:15:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 表示并抛出错误
+
+```swift
+enum VendingMachineError: ErrorType
+{
+    case InvalidSelection // 表示无效
+    case InsufficientFunds(coinsNeeded: Int) // 金额不足
+    case OutOfStock // 缺货
+}
+```
+
+## 用 throwing 函数传递错误
+
+```swift
+struct Item 
+{
+    var price: Int
+    var count: Int
+}
+class VendiMachine
+{
+    var inventory = {
+        "Candy Bar": Item(price: 12, count: 7)
+        "Chips": Item(price: 10, count: 4)
+        "Pretzels": Item(price: 7, count: 11)
+    }
+    var coinsDeposited = 0
+    func dispenseSnack(snack: String) {
+        print("Dispensing \(snack)")
+    }
+
+    func vend(itemNamed name: String throws {
+        guard var item = inventory[name] else {
+            throw VendingMachineError.InvalidSelection
+        }
+
+        guard item.count > 0 else {
+            throw VendingMachineError.OutOfStock
+        }
+
+        guard item.price <= coinsDeposited else {
+            throw VendingMachineError.InsufficientFunds(coinsNeeded: item.price - coinsDepositd)
+        }
+
+        coinsDeposited -= item.price
+        --item.count
+        inventory[name] = item
+        dispenseSnack(name)
+    }
+}
+
+let favoriteSnacks = [
+    "Alice": "Chips",
+    "Bob": "Licorice"
+    "Eve": "Pretzels"
+]
+
+func buyfavoriteSnack(person: String, vendingMachine: VendiMachine) throws
+{
+    let snackName = favoriteSnacks[person] ?? "Candy Bar"
+    try vendingMachine.vend(itemNamed: snackName)
+}
+```
+
+## 用 Do-Catch 处理问题
+
+```swift
+var vendingMachine = VendiMachine()
+vendingMachine.coinsDeposited = 8
+do {
+    try buyfavoriteSnack("Alice", vendingMachine: vendingMachine)
+} catch VendingMachineError.InvalidSelection {
+    print("Invalid Selection.")
+} catch VendingMachineError.OutOfStock {
+    print("Out of Stock.")
+} catch VendingMachineError.InsufficientFunds(let coinsNeeded) {
+    print("Insufficient funds. Please insert an additional \(coinsNeeded) coints.")
+}
+```
+
+## 将错误转换为可选值
+
+```swift
+func fetchData() -> NSData?
+{
+    if let data = try? fetchDataFromeDisk() { return data  }
+    if let data = try? fetchDataFromServer() { return data  }
+    return nil
+}
+```
+
+## 禁止错误传递
+
+```swift
+let photo = try! loadImage("./Appleseed.jps")
+```
+
+## 清除操作
+
+```swift
+func processFile(filename: String) throws
+{
+    if exists(filename) {
+        let file = open(filename)
+        defer {
+            close(file)
+    }
+
+    while let line = try file.readline() {
+        // 处理文件
+    }
+}
+```

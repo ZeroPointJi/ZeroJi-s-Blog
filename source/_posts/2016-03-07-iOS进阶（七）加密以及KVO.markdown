@@ -1,0 +1,191 @@
+---
+title:  "iOS进阶（七）加密以及KVO"
+date:   2016-03-07 19:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 数据安全
+
+- 密匙：密匙是一种参数，它是在明文转换为密文或将密文转换为明文的算法中输入的参数。
+- 明文：没有进行加密，能直接代表原文含义的星系。
+- 密文：经过加密处理之后，隐藏原文含义的信息。
+- 加密：将明文转换成密文的实施过程。
+- 解密：将密文转换成明文的实施过程。
+
+在iOS中，MD5是我们常用的摘要算法。
+
+## MD5
+
+哈希算法：哈希算法是将任意长度的二进制值映射为较短的固定长度的二进制值，这个小得二进制值称为哈希值。
+
+典型的哈希算法：MD2、MD4、MD5和SHA-1等。
+
+MD5：是为计算机安全领域广泛使用的一种散列函数，用以提供信息的完整性保护。
+
+MD5算法有以下特点
+
+1. 压缩性：任意长度的数据，算出的MD5值长度都是固定的（16进制，32位）
+2. 容易计算：从元数据计算出MD5值很容易。
+3. 抗修改性：对元数据进行任何改动，哪怕只修改1个字节，所得到的MD5值都有很大区别。
+4. 强抗碰撞：已知原数据和其MD5值，想找到一个具有相同MD5值的数据是非常困难的。
+
+要计算MD5值，首先要引入<CommonCrypto/CommonCrypto.h>
+
+```objc
+    // 准备字符串
+    NSString *string = @"i love my cp";
+    // 讲OC字符串转换成C语言字符串
+    const char *str = [string UTF8String];
+    // 创建一个存储MD5值得数组
+    unsigned char results[CC_MD5_DIGEST_LENGTH];
+    // 计算MD5值，字符串加密计算值，可以采用以下这个函数
+    CC_MD5(str, (CC_LONG)strlen(str), results);
+    // 遍历results数组，得到所有数据
+    NSMutableString *mStr = [[NSMutableString alloc] init];
+    for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+        [mStr appendFormat:@"%02X", results[i]];
+    }
+    NSLog(@"%@", mStr);
+    
+    // NSData对象获取
+    UIImage *image = [UIImage imageNamed:@"deemo_icon.jpg"];
+    NSData *imageData = UIImageJPEGRepresentation(image, 1.0);
+    // 创建MD5变量
+    CC_MD5_CTX md5;
+    // 初始化变量
+    CC_MD5_Init(&md5);
+    // 准备MD5加密
+    CC_MD5_Update(&md5, imageData.bytes, (CC_LONG)imageData.length);
+    // 结束MD5加密
+    unsigned char result[CC_MD5_DIGEST_LENGTH];
+    CC_MD5_Final(result, &md5);
+    // 获取结果
+    NSMutableString *resultStr = [[NSMutableString alloc] init];
+    for (int i = 0; i < CC_MD5_DIGEST_LENGTH; i++) {
+        [resultStr appendFormat:@"%02X", result[i]];
+    }
+    NSLog(@"%@", resultStr);>)>)
+```
+
+## 钥匙串加密
+
+钥匙串：是苹果Mac OS中的密码管理系统。
+
+```objc
+// 创建钥匙串加密对象
+    KeychainItemWrapper *wrapper = [[KeychainItemWrapper alloc] initWithIdentifier:@"MyKeychainItem" accessGroup:nil];
+    // 系统提供的键值对中的两个键，非体统的键是没法添加到字典中的
+    id kUsernameKey = (__bridge id)kSecAttrAccount;
+    id kPasswordKey = (__bridge id)kSecValueData;
+    [wrapper setObject:@"user" forKey:kUsernameKey];
+    [wrapper setObject:@"123456" forKey:kPasswordKey];
+    // 通过相同的标记创建的钥匙串中具有相同的数据，可以看做是一个对象
+    KeychainItemWrapper *wrapper2 = [[KeychainItemWrapper alloc] initWithIdentifier:@"MyKeychainItem" accessGroup:nil];
+    NSString *username = [wrapper2 objectForKey:kUsernameKey];
+    NSString *password = [wrapper2 objectForKey:kPasswordKey];
+    NSLog(@"用户名为%@", username);
+    NSLog(@"密码为%@", password);
+```
+
+## NSnotification
+
+首先创建一个UIButton用于发送通知
+
+```objc
+UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+button.frame = CGRectMake(100, 100, 200, 200);
+[button setTitle:@"变色" forState:UIControlStateNormal];
+[button addTarget:self action:@selector(click) forControlEvents:UIControlEventTouchUpInside];
+[self.view addSubview:button];k
+```
+
+`click`方法
+
+```objc
+- (void)click
+{
+    // 通知中心发送通知
+    // 通知中心是一个单例，我们通知的发送必须借助通知中心
+    NSNotificationCenter *center = [NSNotificationCenter defaultCenter];
+    [center postNotificationName:@"巴达的证书不见了" object:@[@"中二笑了", @"洪荒哭了", @"证书乐了"]];
+}
+```
+
+通知中为发送的通知添加一个观察者，一定要保证，发送通知之前，观察者已经确定。
+
+```objc
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(changeColor:) name:@"巴达的证书不见了" object:nil];
+```
+
+`changeColor:`方法
+
+```objc
+- (void)changeColor:(NSNotification *)notification
+{
+    NSLog(@"%@", notification.name); // 通知的唯一标示
+    NSLog(@"%@", notification.object); // 通知中携带的内容，可以是任意对象
+    NSLog(@"%@", notification.userInfo); // 通知中附加的信息，一个可选字典
+    self.view.backgroundColor = [UIColor colorWithRed:arc4random() % 256 / 255.0 green:arc4random() % 256 / 255.0 blue:arc4random() % 256 / 255.0 alpha:1.0];
+}
+```
+
+最后不要忘记再页面销毁的时候移除观察者
+
+```objc
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"巴达的证书不见了" object:nil];
+```
+
+## KVO
+
+如果说NSNotification是监视方法的执行，那么KVO就是监视值的变化。
+
+添加一个观察者，观察self.myView的背景颜色是否发生变化
+
+1. self.myView代表被观察的对象
+2. self代表观察者
+3. backgroundColor 代表观察者观察被观察者的哪个属性值
+4. 新值 旧值
+5. 需要传入到代理方法德参数
+
+```objc
+- (void)dealloc
+{
+    // 移除观察者
+    [self.myView removeObserver:self forKeyPath:@"backgroundColor"];
+
+}
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    self.view.backgroundColor = [UIColor whiteColor];
+    
+    self.myView = [[UIView alloc] initWithFrame:CGRectMake(100, 100, 200, 200)];
+    self.myView.backgroundColor = [UIColor redColor];
+    [self.view addSubview:self.myView];
+    
+    [self.myView addObserver:self forKeyPath:@"backgroundColor" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionOld context:@"哈哈"];
+    
+    UIButton *button = [UIButton buttonWithType:UIButtonTypeSystem];
+    button.frame = CGRectMake(100, 200, 200, 40);
+    [button setTitle:@"变色" forState:UIControlStateNormal];
+    [button addTarget:self action:@selector(change) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:button];
+}
+
+- (void)change
+{
+    // 改变self.myView的背景颜色
+    self.myView.backgroundColor = [UIColor colorWithRed:arc4random() % 256 / 255.0 green:arc4random() % 256 / 255.0 blue:arc4random() % 256 / 255.0 alpha:1.0];
+
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context
+{
+    // 千万不要在观察者代理方法里面，再去修改被观察者的被观察属性
+    NSLog(@"keyPath is %@, object is %@, change is %@, context is %@", keyPath, object, change, context);
+    self.view.backgroundColor = [UIColor colorWithRed:arc4random() % 256 / 255.0 green:arc4random() % 256 / 255.0 blue:arc4random() % 256 / 255.0 alpha:1.0];
+}
+```
+
+> 注意！一定要在页面销毁的时候释放观察者。

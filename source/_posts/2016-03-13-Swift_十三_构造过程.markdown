@@ -1,0 +1,439 @@
+---
+title:  "Swift (十三) 构造过程"
+date:   2016-03-13 20:30:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 储存属性的初始赋值
+
+类和结构体在创建实例时,必须为所有储存型属性设置合适的初始值
+
+## 构造器
+
+```swift
+struct Fahrenheit {
+    var temperature: Double 
+    init() {
+        temperature = 32.0
+    }
+}
+var f = Fahrenheit()
+print("The default temperature is \(f.temperature)° Fahrenheit")
+```
+
+## 默认属性值
+
+```swift
+struct Fahrenheit {
+    var temperature = 32.0
+}
+var f = Fahrenheit()
+print("The default temperature is \(f.temperature)° Fahrenheit")
+```
+
+## 构造参数
+
+```swift
+struct Celsius {
+    var temperatureInCelsius: Double
+    init(formFahrenheit fahrenheit: Double) {
+        temperatureInCelsius = (fahrenheit - 32.0) / 1.8
+    }
+    init(formKelvin kelvin: Double) {
+        temperatureInCelsius = kelvin  - 273.15
+    }
+}
+let boilingPointOfWater = Celsius(formFahrenheit: 212.0)
+print(boilingPointOfWater.temperatureInCelsius)
+let freezingPointOfWater = Celsius(formKelvin: 273.15)
+print(freezingPointOfWater.temperatureInCelsius)
+```
+
+## 参数内部名称和外部名称
+
+```swift
+struct Color {
+    let red, green, blue: Double
+    init(red: Double, green: Double, blue: Double) { // 如果没有给构造器第一个参数指定外部名称,则内部名称即为外部名称
+        self.red = red
+        self.green = green
+        self.blue = blue
+    }
+    init(white: Double) {
+        red = white
+        green = white
+        blue = white
+    }
+}
+let magenta = Color(red: 1.0, green: 0.0, blue: 1.0)
+let halfGray = Color(white: 0.5)
+// let veryGreen = Color(0.0, 1.0, 0.0) // 如果不通过外部参数名字传值,是没法使用这个构造器的
+```
+
+## 不带外部名的构造器参数
+
+```swift
+struct NewCelsius {
+    var temperatureInCelsius: Double
+    init(framFahrenheit fahrenheit: Double) {
+        temperatureInCelsius = (fahrenheit - 32.0) / 1.8
+    }
+    init(fromKelvin kelvin: Double) {
+        temperatureInCelsius = kelvin - 273.15
+    }
+    init(_ celsius: Double) { // 如果用_当外部名,则外部名为空
+        temperatureInCelsius = celsius
+    }
+}
+let bodyTemperature = NewCelsius(37.0)
+print(bodyTemperature.temperatureInCelsius)
+```
+
+## 可选属性类型
+
+```swift
+class SurveyQuestion {
+    var text: String
+    var response: String? // 如果可选类型在初始化时没有赋值,则自动赋值为nil
+    init(text: String) {
+        self.text = text
+    }
+    func ask() {
+        print(text)
+    }
+}
+let cheeseQuestion = SurveyQuestion(text: "Do you like cheese?")
+cheeseQuestion.ask()
+cheeseQuestion.response = "Yes, I do like cheese"
+```
+
+## 构造过程中常量属性的修改
+
+```swift
+class NewsurveyQuestion {
+    let text: String // 常量只能在实例化的构造过程中修改,一旦确定,之后就无法修改;不能再子类中修改
+    var response: String?
+    init(text: String) {
+        self.text = text
+    }
+    func ask() {
+        print(text)
+    }
+}
+```
+
+## 默认构造器
+
+```swift
+class ShoppingListItem { // 如果所有属性都有默认值,则系统会默认提供一个构造器
+    var name: String?
+    var quatity = 1
+    var purchased = false
+}
+var item = ShoppingListItem()
+
+// 结构体的逐一成员构造器
+struct Size { // 如果结构体没有构造器,系统会提供一个逐一构造器,用来给所有属性赋值
+    var width = 0.0, height = 0.0
+}
+let twoByTwo = Size(width: 2.0, height: 2.0)
+```
+
+## 结构体的逐一成员构造器
+
+```swift
+struct Point {
+     var x = 0.0, y = 0.0
+
+}
+struct Rect {
+    var origin = Point()
+    var size = Size()
+    init() {}
+    init(origin: Point, size: Size) {
+        self.origin = origin
+        self.size = size
+    }
+    init(center: Point, size: Size) {
+        let originX = center.x - (size.width / 2)
+        let originY = center.y - (size.height / 2)
+        self.init(origin: Point(x: originX, y: originY), size: size) // 可以用self.init来引用类型中的其他构造器
+    }
+}
+
+let basicRect = Rect() // 第一个构造器
+
+let originRect = Rect(origin: Point(x: 2.0, y: 2.0), size: Size(width: 5.0, height: 5.0)) // 第二个构造器
+
+let centerRect = Rect(center: Point(x: 4.0, y: 4.0), size: Size(width: 3.0, height: 3.0)) // 第三个构造器
+```
+
+## 类的继承和构造过程
+
+- 类里面的所有储存型属性,包括继承自父类的属性,都必须在构造过程中设置初始值.
+- Swift为类类型提供了两种构造器来确保实例中所有储存型属性都能够获得初始值,它们分别是制定构造器和便利构造器.
+
+## 构造器的继承和重写
+
+```swift
+class Vehicle {
+    var numberOfWheels = 0
+    var description: String {
+        return "\(numberOfWheels) wheel(s)"
+    }
+}
+let vehicle = Vehicle()
+print("Vehicle: \(vehicle.description)")
+
+class Bicycle: Vehicle {
+    override init() { // override关键字修饰的init,代表重写父类的init方法
+        super.init() // super.init()表示调用父类的init()方法
+        numberOfWheels = 2
+    }
+}
+let bicycle = Bicycle()
+print("Bicycle: \(bicycle.description)")
+```
+
+## 制定构造器和便利构造器实践
+
+```swift
+class Food {
+    var name: String
+    init(name: String) {
+        self.name = name
+    }
+    convenience init() { // convenience 关键字修饰便利构造器
+        self.init(name: "[Unnamed]")
+    }
+}
+let namedMeat = Food(name: "Bacon")
+print(namedMeat.name)
+let mysteryMeat = Food()
+print(mysteryMeat.name)
+
+class RecipeIngredient: Food {
+    var quantity: Int
+    init(name: String, quantity: Int) {
+        self.quantity = quantity
+        super.init(name: name)
+    }
+    override convenience init(name: String) {
+       self.init(name: name, quantity: 1)
+    }
+}
+let oneMysteryItem = RecipeIngredient()
+let oneBacon = RecipeIngredient(name: "Bacon")
+let sixEggs = RecipeIngredient(name: "Eggs", quantity: 6)
+
+class NewShoppingListItem: RecipeIngredient {
+    var purchased = false
+    var description: String {
+        var output = "\(quantity) x \(name)"
+        output += purchased ? "√" : "×"
+        return output
+    }
+}
+var breakfastList = [
+    NewShoppingListItem(),
+    NewShoppingListItem(name: "Bacon"),
+    NewShoppingListItem(name: "Eggs", quantity: 6)
+]
+breakfastList[0].name = "Orange juice"
+breakfastList[0].purchased = true
+for item in breakfastList {
+    print(item.description)
+
+}
+```
+
+## 可失败构造器
+
+可失败构造器的参数名和参数类型,不能与其他非可失败构造器的参数名,以及参数类型相同
+
+```swift
+truct Animal {
+    let species: String
+    init?(species: String) {
+        if species.isEmpty {
+            return nil
+        }
+        self.species = species
+    }
+}
+
+let someCreature = Animal(species: "Giraffe")
+if let giraffe = someCreature {
+    print("An animal was initialized with a species of \(giraffe.species)")
+}
+
+let anonymousCreature = Animal(species: "")
+if anonymousCreature == nil {
+    print("The anoymous creature counld not be initialized")
+}
+```
+
+## 枚举类型的可失败构造器
+
+```swift
+enum TemperatureUnit {
+    case Kelvin, Celsius, Fahrenheit
+    init?(symbol: Character) {
+        switch symbol {
+        case "K":
+            self = .Kelvin
+        case "C":
+            self = .Celsius
+        case "F":
+            self = .Fahrenheit
+        default:
+            return nil
+        }
+    }
+}
+let fahrenheitUnit = TemperatureUnit(symbol: "F")
+if fahrenheitUnit != nil {
+    print("This is a deined temperature unit, so initialization succeeded.")
+}
+let unknownUnit = TemperatureUnit(symbol: "X")
+if unknownUnit == nil {
+    print("This is not a defined temperature unit, so initialization failed.")
+}
+```
+
+## 带初始值的枚举类型的可失败构造器
+
+```swift
+enum NewTemperatureUnit: Character {
+    case Kelvin = "K", Celsius = "C", Fahrenheit = "F"
+}
+let newFahrenheitUnit = NewTemperatureUnit(rawValue: "F")
+if newFahrenheitUnit != nil {
+    print("This is a defined temperature unit, so initialization succeeded.")
+}
+let newUnknownUnit = NewTemperatureUnit(rawValue: "X")
+if newUnknownUnit == nil {
+    print("This is not a defined temperature unit, so initialization failed.")
+}
+```
+
+## 类的可失败构造器
+
+```swift
+class Product {
+    let name: String!
+    init?(name: String) {
+        self.name = name
+        if name.isEmpty { return nil  }
+    }
+}
+if let bowTie = Product(name: "bow tie") {
+    print("The product's name is \(bowTie.name)")
+}
+```
+
+## 构造失败的传值
+
+```swift
+class CartItem: Product {
+    let quantity: Int!
+    init?(name: String, quantity: Int) {
+        self.quantity = quantity
+        super.init(name: name)
+        if quantity < 1 { return nil  }
+    }
+}
+if let twoSocks = CartItem(name: "sock", quantity: 2) {
+    print("item: \(twoSocks.name), quantity: \(twoSocks.quantity)")
+}
+if let zeroShirts = CartItem(name: "shirt", quantity: 0) {
+    print("item: \(zeroShirts.name), quantity: \(zeroShirts.quantity)")
+} else {
+    print("Unable to initialize zero shirts")
+}
+if let oneUnnamed = CartItem(name: "", quantity: 1) {
+    print("item: \(oneUnnamed.name), quantity: \(oneUnnamed.quantity)")
+} else {
+    print("Unable to initialize zero shirts")
+}
+```
+
+## 重写一个可失败构造器
+
+```swift
+class Document {
+    var name: String?
+    init(){} // 该构造器构件了一个name属性的值为nil 的document实例
+    init?(name: String) {
+        self.name = name
+        if name.isEmpty { return nil  }
+    }
+}
+class AutomaticallyNamedDocument: Document {
+    override init() {
+        super.init()
+        self.name = "[Untitled]"
+    }
+    override init(name: String) {
+        super.init()
+        if name.isEmpty {
+            self.name = "[Untitled]"
+        } else {
+            self.name = name
+        }
+    }
+}
+class UntitledDocument: Document {
+    override init() {
+        super.init(name: "[Untitled]")!
+    }
+}
+```
+
+## 可失败构造器init!
+
+通常来说我们通过在`init`关键字后面添加问号的方式来定义一个可失败构造器,但也可以通过在`init`后面添加感叹号的方式来定义一个可失败构造器(`init!`),该可失败构造器将会构建一个对应类型的隐式解包可选类型的对象.
+
+## 必要构造器
+
+```swift
+class SomeClass {
+    required init() { // 在类的构造器前添加required修饰符表明所有该类的子类都必须实现该构造器
+             
+    }
+}
+class SomeSubclass: SomeClass {
+    required init() {
+                
+    }
+}
+class NewSomeSubclass: SomeClass {
+    // 如果子类继承的构造器能满足必要构造器的要求,测无需再子类中显式提供必要构造器的实现
+}
+```
+
+## 通过闭包或函数设置属性的默认值
+
+```swift
+struct Checkerboard {
+    let boardColors: [Bool] = {
+        var temporaryBoard = [Bool]()
+        var isBlack = false
+        for i in 1...10 {
+            for j in 1...10 {
+                temporaryBoard.append(isBlack)
+                isBlack = !isBlack
+            }
+        }
+        print(temporaryBoard)
+        return temporaryBoard
+    }()
+    func squareIsBlackAtRow(row: Int, column: Int) -> Bool {
+        return boardColors[(row * 10) + column]
+    }
+}
+let board = Checkerboard()
+print(board.squareIsBlackAtRow(0, column: 1))
+print(board.squareIsBlackAtRow(9, column: 8))
+
+```

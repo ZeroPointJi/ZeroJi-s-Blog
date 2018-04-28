@@ -1,0 +1,182 @@
+---
+title:  "iOS进阶（八）PHP后台开发"
+date:   2016-03-17 19:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## PHP 基本语法
+
+在'XAMPP'的根目录下的 `htcdocs` 文件夹中创建一个文件夹 `phpTest`.
+
+使用文本编辑器创建一个文件 `apiTest.php`.
+
+在其中编写 `PHP` 语句.
+
+记得要在标签 `<?php?>` 的第二个问号前编写语句, 否则浏览器不识别.
+
+```php
+// php 输出函数
+echo(rand(1, 10));
+
+// 输出换行
+echo ("<br>");
+
+// gettype 获取变量的类型, 返回类型是字符串.
+echo(gettype($i)."<br>"); // php 中拼接字符串使用.号
+
+// strlen 获取字符串的长度
+echo(strlen("name"));
+
+// substr 从下标n的位置向后截取字符串
+echo(substr("name", 2));
+
+// 分支
+$a = 5;
+$b = 10;
+if ($a > $b) {
+    echo($a."<br>");
+} else {
+    echo($b."<br>");
+}
+
+// 数组
+$array = array(4, 1, 6, 3);
+// 数组排序
+sort($array);
+for ($i = 0; $i < 4; $i++) {
+    echo($array[$i]."<br>");
+}
+// 字符串改值
+$array[2] = 10;
+unset($array[2]);
+// json_encode 以json格式输出, 重要方法
+echo(json_encode($array)."<br>");
+
+// 字典
+$person = array("name" => "张三", "sex" => "男", "age" => 30);
+echo(json_encode($person));
+
+$data = $_GET; // get 处理请求数据的方式
+$data = $_POST; // post 处理请求数据的方法
+$data = $_REQUEST; // get 和 post 请求都可以处理
+```
+
+建立与服务器交互, 并编写登录请求页面.
+
+> 切记, 在返回结果的时候, 一定不能有额外的字符串, 只能有 `json` 数据格式的数据.
+
+```php
+// 与服务器本地服务器交互
+
+$data = $_REQUEST; 先选定处理请求数据的方式
+
+$name = $data["name"]; // 从数据中提取 name
+$password = $data["password"]; // 从数据中提取 password
+
+// 登录服务器, 参数1:服务器 ip 地址, 参数2: 连接服务器使用的用户名, 参数3: 密码
+$connect = mysql_connect("127.0.0.1", "root", "");
+
+// 选择数据库
+mysql_select_db("Person", $connect);
+
+// 获取语句执行结果
+$result = mysql_query("select * frome REgister where username = '$name'");
+
+// 从结果中逐行获取数据
+$row = mysql_fetch-array($result);
+
+// 判断密码是否相同
+if ($row["password"] == $password) {
+    $array["result"] = "success";
+    // 返回给 app 是否登录成功
+    echo(json_encode($array));
+}
+```
+
+记得在服务器中创建要用来存储的数据库.
+
+注册请求页面
+
+```php
+$datat = $POST;
+
+$name = $data["name"];
+$password = $data["password"];
+
+// 登录服务器数据库 参数1: 数据库服务器地址 参数2: 服务器用户名 参数3: 密码
+$connect = mysql_connect("127.0.0.1", "root", "");
+if($connect) {
+    //echo('链接服务器成功'.'<br>');
+    $array["connect"] = "success";
+} else {
+    //echo('连接服务器失败'.'<br>');
+    $array["connect"] = "error";
+}
+
+// 选择数据库
+mysql_select_db("Person", $connect);
+
+// 将用户名.密码插入到数据库中
+if (mysql_query("INSERT INTO Register(username, password) VALUES ('$name', '$password')")) {
+    //echo "插入成功";
+    $array["result"] = "success";
+} else {
+    //echo "插入失败";
+    $array["result"] = "error";
+}
+
+// 返回是否注册成功
+echo(json_encode($array));
+```
+
+## iOS 请求方式
+
+登录请求
+
+```objc
+    // get 请求
+    NSURLSession *session = [NSURLSession sharedSession];
+    NSURL *url = [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1/phpTest/apiTest.php?name=%@&password=%@", _usernameTextField.text, _passwordTextField.text]];
+    NSURLSessionTask *task = [session dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+        NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+        NSLog(@"%@", dic[@"result"]);
+    }];
+    [task resume];
+                         
+    // post 请求
+    NSURL *url = [NSURL URLWithString:@"http://127.0.0.1/phpTest/apiTest.php"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [[NSString stringWithFormat:@"name=%@&password=%@", _usernameTextField.text, _passwordTextField.text] dataUsingEncoding:NSUTF8StringEncoding];
+    NSURLSession *session = [NSURLSession sharedSession];
+    NSURLSessionTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+        //NSLog(@"%@", dic);
+        if ([dic[@"result"] isEqualToString:@"success"]) {
+            NSLog(@"登录成功");
+        }
+    }];
+    [task resume];
+```
+
+注册请求
+
+```objc
+    // post 请求
+    NSURL *url = [NSURL URLWithString:@"http://127.0.0.1/phpTest/register.php"];
+    NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:url];
+    request.HTTPMethod = @"POST";
+    request.HTTPBody = [[NSString stringWithFormat:@"name=%@&password=%@", _usernameTextField.text, _passwordTextField.text] dataUsingEncoding:NSUTF8StringEncoding];
+    NSURLSession *session = [NSURLSession sharedSession];
+    NSURLSessionTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+        NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+        // 判断登录
+        if ([dic[@"result"] isEqualToString:@"success"]) {
+            // 如果成功, 返回登录页面
+            [self.navigationController popViewControllerAnimated:YES];
+        }
+    }];
+    [task resume];
+```
+
+> 注意, 尽量不要用 `GET` 请求, 因为 `GET` 请求会把账号密码或者数据暴露出来, 容易让人获取, 而 `POST` 请求会把数据打包, 很难直接捕获.

@@ -1,0 +1,112 @@
+---
+title:  "iOS离线模式"
+date:   2016-06-24 10:00:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+### 离线模式
+
+这几天公司有新需求, 当网络异常或没有网络时显示上次显示过的页面. 我将这个需求剖析开来, 分成两个问题:
+
+1. 完成图片缓存
+2. 完成数据本地存储
+
+接下来的开发就围绕这两个问题进行解决.
+
+### 图片缓存
+
+说起图片时, 我第一个是想到了 `SDWebImage`, 但因为之前没有深入研究过, 做了不少的傻事. 例如: 将 `SDWebImage` 再次封装成一个延展, 手动实现图片的本地缓存, 手动搜索并判断图片的存在, 手动提取本地图片等. 但是后来发现, 只要调用 `sd_setImage:` 这个方法, 本地会出现两张同名的图片, 实在令人费解. 经过测试后确认, 以上的一切 `SDWebImage` 已经帮我们做好了. 仅仅只要调用 `sd` 开头的设置图片方法, 就能自动进行本地缓存.
+
+`SDWebImage` 缓存图片的原理, 在我个人的理解上是: 显示占位图-> 从内存中查找图片 -> 从磁盘中查找图片 -> 根据 `url` 下载图片 -> 显示图片. 当从内存或磁盘中找到图片时, 直接略过后面步骤显示图片.
+
+当然, 手动图片缓存图片也有它的可取之处, 灵活性很高, 可以自行判断是否缓存图片, 自定义图片缓存地址, 最大并发数, 图片缓存策略等.
+
+本地缓存类 `SDWebImage` 中的 `SDImageCache`. `SDImageCache` 是个单例类, 使用以下代码获取. 这样图片缓存路径为沙盒路径下的`Library/Caches/default`.
+
+```objc
+/** 直接获取默认对象 */
++ (SDImageCache *)sharedImageCache;
+```
+
+当然, 自定义缓存空间也是可行的.
+
+```objc
+/** 在沙盒的cache目录下创建一个指定名字的缓存空间(文件夹) */
+- (instanstype)initWithNamespace:(NSString *)ns;
+```
+
+存储图片到内存和磁盘上
+
+```objc
+/** 在内存和磁盘上存储一个图片(key参数是图片的唯一标识符) */
+- (void)storeImage:(UIImage *)image forkey:(NSString *)key;
+/** 缓存一个图片到内存, 并设置是否缓存到磁盘上 */
+- (void)storeImage:(UIImage *)image forKey:(NSString *)key toDisk:(BOOL)toDisk;
+```
+
+查找图片并且获取指定 `key` 的图片
+
+```objc
+/** 异步在磁盘上查找指定 key 的图片, 完成后回调 Block */
+- (NSOperation *)queryDiskCacheForKey:(NSString *)key done:(SDWebImageQueryCompleteBlock)doneBlock;
+/** 从内存获取指定 key 的图片 */
+- (UIImage *)imageFromMemoryCacheForKey:(NSString *)key;
+/** 从磁盘获取指定 key 的图片 */
+- (UIImage *)imageFromDiskCacheForKey:(NSString *)key;
+```
+
+### 数据本地存储
+
+数据存储是个极其简单的事情, 无非是将 `JSON` 数据本地化, `plist` 文件或者数据库都能实现. 
+
+因为图方便, 我使用 `plist` 文件进行存储. 但也遇到了一些问题, 就是在使用 `NSUserDefault` 存储数据时, 出现了 `Attempt to set a non-property-list object`的问题. 按字面意思翻译为"不能设置一个没在属性列表中的对象", 即存储类型中有非系统类型的自定义对象.
+
+为了解决这个问题, 需要将对象编码为 `NSData` 类型的对象后再存储, 而提取时需要解码.
+
+```objc
+// 对数组进行编码并且储存数据
+NSData *data = [NSKeyedArchiver archivedDataWithRootObject:cakeModelArray];
+[[NSUserDefaults standardUserDefaults] setObject:data forKey:@"cakeModelArray"];
+
+// 获取数据并解码成数组
+NSData *data = [[NSUserDefaults standardUserDefaults] objectForKey: @"cakeModelArray"];
+_cakeModelArray = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+```
+
+本以为用了以上方法就能成功, 但是错误提示还是没有改变. 经过资料查询后, 找到问题所在: 自定义类型需要遵守 `NSCoding` 协议, 并且实现编码解码方法, 对其中的属性进行处理.
+
+```objc
+@interface LeCakeShopModel : NSObject <NSCoding>
+@property(nonatomic,copy)NSString *img;
+@property(nonatomic,copy)NSString *tag;
+@property(nonatomic,strong)NSMutableArray *goods;
+@end
+
+@implementation LeCakeShopModel
+
+// 重写解码方法
+- (instancetype)initWithCoder:(NSCoder *)aDecoder
+{
+    if (self = [super init]) {
+        self.img = [aDecoder decodeObjectForKey:@"img"];
+        self.tag = [aDecoder decodeObjectForKey:@"tag"];
+        self.goods = [aDecoder decodeObjectForKey:@"goods"];
+    }
+    return self;
+}
+
+// 重写编码方法
+- (void)encodeWithCoder:(NSCoder *)aCoder
+{
+    [aCoder encodeObject:self.img forKey:@"img"];
+    [aCoder encodeObject:self.tag forKey:@"tag"];
+    [aCoder encodeObject:self.goods forKey:@"goods"];
+}
+
+@end
+```
+
+### 总结
+
+之前对 `SDWebImage` 框架的理解还是停留在很浅层的地方, 亦不涉及原理. 这次比较深入的使用以后, 发现 `SDWebImage` 的强大所在. 也是提醒自己, 深受推广的框架必有惊人之处.
+

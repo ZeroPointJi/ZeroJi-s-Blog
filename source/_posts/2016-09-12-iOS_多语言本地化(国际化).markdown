@@ -1,0 +1,57 @@
+---
+title:  "iOS_多语言本地化(国际化)"
+date:   2016-09-12 14:20:00 +8:00
+categories: 
+    - Objective-C
+tags: 
+    - iOS
+---
+### 多语言本地化(国际化)
+
+1. 根据系统语言切换应用语言
+2. 应用内部切换语言
+
+因为内部切换语言只需修改获取的系统语言的信息, 所以在这里我们只讨论根据系统语言切换应用版本.
+
+#### 添加需要的语言
+
+1. 点击项目 
+2. 选择 `PROJECT` 下的本项目
+3. 选中上方的 `Info`
+4. 找到 `Localization` 并点击 `+` 号添加要支持的语言
+
+#### 国际化应用名称
+
+1. 选择 `Info.plist` 配置文件
+2. 点击加号添加 `Application has localized display name` 并设置值为 `YES`
+3. `command` + `n` 创建 `String Files`, 取名为 `InfoPlist`
+4. 点击 `InfoPlist.strings` 文件, `command` + `alt` + `1` 调出右侧工具栏
+5. 点击 `Localization` 完成配置后, 将需要的语言打钩.
+6. 点开 `InfoPlist.strings` 文件前的小三角, 选择需要的语言添加 `CFBundleDisplayName ="MultiLanguageTest";` (`=` 后面的为对应的翻译)
+
+#### 国际化文字
+
+1. 创建名称为 `Localizable` 的 `String Files`
+2. 同上在工具栏勾选需要的语言
+3. 将语言翻译后加入各语言的文件 如 `"buy" = "购买";`
+4. 最后在需要使用文字的地方使用 `NSLocalizedString(@"buy", nil);` 方法(第一个参数为配置的文字, 第二个参数无视即可)
+
+#### 多人开发
+
+对于多人开发来说, 每个人负责一些模块, 那么如果用同一个文字配置文件很容易造成代码合并冲突, 所以需要根据各自的模块选取命名不同的文字配置文件.
+
+唯一与上面所说的不同的是, 不要再使用 `NSLocalizedString(@"buy", nil);` 方法, 而要使用 `NSLocalizedStringFromTable(@"OMG", @"LabelText", nil);` 方法(第二个参数为文字配置文件名).
+
+#### 模拟器切换系统语言
+
+一.  直接在模拟器中切换
+
+二.
+
+1. 点击暂停按钮右边的项目按钮
+2. 选择 `Edit Scheme...`
+3. 选择弹出窗口中左边的 `Run`
+4. 选择 `Option`
+5. 点击 `Application Language` 选择语言
+
+然后运行应用即可.

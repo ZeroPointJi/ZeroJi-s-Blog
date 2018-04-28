@@ -1,0 +1,231 @@
+---
+title:  "iOS进阶（十）即时通信(2)"
+date:   2016-03-10 16:00:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 好友列表界面实现
+
+在`ListTableViewController`的`viewDidLoad`方法中添加一个按钮用于添加好友.
+
+```objc
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAdd target:self action:@selector(add)];
+```
+
+为了使好友记录能够保存,我们需要一个`XMPPRoster`,在`XMPPManager`中声明并且在`init`方法中初始化.
+
+```objc
+    // XMPP中有一个自带的存储花名册的coreData数据库,我们创建花名册的第一个参数,只需要将这个数据库获取即可.
+    XMPPRosterCoreDataStorage *coreData = [XMPPRosterCoreDataStorage sharedInstance];
+    self.roster = [[XMPPRoster alloc] initWithRosterStorage:coreData dispatchQueue:dispatch_get_global_queue(0, 0)];
+    // 告知通信管道,获取花名册
+    [self.roster activate:self.stream];
+```
+
+实现添加好友按钮点击事件.
+
+```objc
+// 添加好友的方法
+- (void)add
+{
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"添加好友" message:@"请输入账户名i" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        // 添加观察者,观察输入框的变化
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getUsername:) name:UITextFieldTextDidChangeNotification object:textField];
+    }];
+    UIAlertAction *action1 = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        [alert dismissViewControllerAnimated:YES completion:nil];
+    }];
+    UIAlertAction *action2 = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        // 得到添加好友的JID
+        XMPPJID *jid = [XMPPJID jidWithString:[NSString stringWithFormat:@"%@@%@", self.username, kDomin]];
+        // 告诉花名册,有信息要添加
+        [[XMPPManager shareInstance].roster subscribePresenceToUser:jid];
+        [alert dismissViewControllerAnimated:YES completion:nil];
+    }];
+    [alert addAction:action1];
+    [alert addAction:action2];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+```
+
+其中重点方法为添加观察者,观察输入框变化.
+
+在实现党观察者观察到输入框变化时,执行的方法.
+
+```objc
+- (void)getUsername:(NSNotification *)no
+{
+    UITextField *textField = no.object;
+    self.username = textField.text;
+}
+```
+
+接下来要实现接收花名册的方法和党用户接收到好友请求时执行的方法.
+
+添加代理
+
+```
+    [[XMPPManager shareInstance].roster addDelegate:self delegateQueue:dispatch_get_main_queue()];
+```
+
+遵守`XMPPRosterDelegate>`协议.
+
+实现代理方法
+
+```objc
+#pragma mark - XMPP Roster Delegate -
+
+// 开始接收花名册
+- (void)xmppRosterDidBeginPopulating:(XMPPRoster *)sender
+{
+    NSLog(@"开始接收");
+}
+
+// 正在接收花名册
+- (void)xmppRoster:(XMPPRoster *)sender didReceiveRosterItem:(DDXMLElement *)item
+{
+    NSLog(@"正在接收");
+    // item属于XML结构,获取JIDString,需要找到jid节点信息.
+    NSString *jidString = [item attributeStringValueForName:@"jid"];
+    // 每一个身份标示jid,都可以由一个JIDString来得到.
+    XMPPJID *jid = [XMPPJID jidWithString:jidString];
+    if ([self.dataArr containsObject:jid]) {
+        return;
+    }
+    [self.dataArr addObject:jid];
+    [self.tableView insertRowsAtIndexPaths:@[[NSIndexPath indexPathForRow:self.dataArr.count - 1 inSection:0]] withRowAnimation:UITableViewRowAnimationFade];
+}
+
+// 结束接收花名册
+- (void)xmppRosterDidEndPopulating:(XMPPRoster *)sender
+{
+    NSLog(@"结束接收");
+}
+
+// 当账户接收到好友请求时执行的协议方法.
+- (void)xmppRoster:(XMPPRoster *)sender didReceivePresenceSubscriptionRequest:(XMPPPresence *)presence
+{
+    // 首先获取添加者的信息
+    XMPPJID *jid = presence.from;
+    
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"好友请求" message:[NSString stringWithFormat:@"%@想要添加你为好友,是否同意?", jid.user] preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertAction *action1 = [UIAlertAction actionWithTitle:@"同意" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        // 接受好友请求
+        [[XMPPManager shareInstance].roster acceptPresenceSubscriptionRequestFrom:jid andAddToRoster:YES];
+        [alert dismissViewControllerAnimated:YES completion:nil];
+    }];
+    UIAlertAction *action2 = [UIAlertAction actionWithTitle:@"拒绝" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        // 拒绝好友请求
+        [[XMPPManager shareInstance].roster unsubscribePresenceFromUser:jid];
+    }];
+    [alert addAction:action1];
+    [alert addAction:action2];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+```
+
+至此,好友列表完成.
+
+## 实现聊天界面
+
+首先创建一个按钮用于输入聊天信息.
+
+```objc
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(sendMessage)];
+```
+
+为了使聊天数据在本地保存,需要一个管理信息类和一个临时数据库.在`XMPPManager`中声明`XMPPMessageArchiving`对象和`NSManagedObjectContext`对象,并且在`init`方法中初始化.
+
+```objc
+    XMPPMessageArchivingCoreDataStorage *stor = [XMPPMessageArchivingCoreDataStorage sharedInstance];
+    self.context = [stor mainThreadManagedObjectContext];
+    self.messageAc = [[XMPPMessageArchiving alloc] initWithMessageArchivingStorage:stor dispatchQueue:dispatch_get_main_queue()];
+    [self.messageAc activate:self.stream];
+```
+
+在`ChatTableViewController`中实现发送按钮点击事件.
+
+```objc
+- (void)sendMessage
+{
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"发送消息" message:@"请输入文本" preferredStyle:UIAlertControllerStyleAlert];
+    [alert addTextFieldWithConfigurationHandler:^(UITextField * _Nonnull textField) {
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(getText:) name:UITextFieldTextDidChangeNotification object:textField];
+    }];
+    UIAlertAction *action1 = [UIAlertAction actionWithTitle:@"确定" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        // chat表示聊天类型 message表示离线消息类型
+        XMPPMessage *message = [XMPPMessage messageWithType:@"chat" to:self.jid];
+        // 添加文本内容
+        [message addBody:self.content];
+        // 发送消息
+        [[XMPPManager shareInstance].stream sendElement:message];
+        [alert dismissViewControllerAnimated:YES completion:nil];
+    }];
+    UIAlertAction *action2 = [UIAlertAction actionWithTitle:@"取消" style:UIAlertActionStyleCancel handler:nil];
+    [alert addAction:action1];
+    [alert addAction:action2];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+```
+
+添加代理
+
+```objc
+    [[XMPPManager shareInstance].stream addDelegate:self delegateQueue:dispatch_get_main_queue()];
+```
+
+遵守`XMPPStreamDelegate`协议
+
+实现代理方法
+
+```objc
+#pragma mark - XMPP Stream Delegate -
+
+// 接受消息
+- (void)xmppStream:(XMPPStream *)sender didReceiveMessage:(XMPPMessage *)message
+{
+    [self loadMessage];
+}
+
+// 发送消息
+- (void)xmppStream:(XMPPStream *)sender didSendMessage:(XMPPMessage *)message
+{
+    [self loadMessage];
+}
+
+// 消息发送失败
+- (void)xmppStream:(XMPPStream *)sender didFailToSendMessage:(XMPPMessage *)message error:(NSError *)error
+{
+
+}
+```
+
+实现从数据库中加载聊天记录
+
+```objc
+- (void)loadMessage
+{
+    NSFetchRequest *fetchRequest = [[NSFetchRequest alloc] init];
+    NSEntityDescription *entity = [NSEntityDescription entityForName:@"XMPPMessageArchiving_Message_CoreDataObject" inManagedObjectContext:[XMPPManager shareInstance].context];
+    [fetchRequest setEntity:entity];
+    // Specify criteria for filtering which objects to fetch
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"streamBareJidStr = %@ and bareJidStr = %@", [XMPPManager shareInstance].stream.myJID.bare, self.jid.bare];
+    [fetchRequest setPredicate:predicate];
+    // Specify how the fetched objects should be sorted
+    NSSortDescriptor *sortDescriptor = [[NSSortDescriptor alloc] initWithKey:@"timestamp"
+    ascending:YES];
+    [fetchRequest setSortDescriptors:[NSArray arrayWithObjects:sortDescriptor, nil]];
+    
+    NSError *error = nil;
+    NSArray *fetchedObjects = [[XMPPManager shareInstance].context executeFetchRequest:fetchRequest error:&error];
+    if (fetchedObjects == nil) {
+        return;
+    } else {
+        self.messageArr = [fetchedObjects mutableCopy];
+    }
+    [self.tableView reloadData];
+}
+```
+
+其中只要敲出代码`fetch`然后按回车,就会自动生成从`coreData`数据库中查询的代码数据库中查询的代码.

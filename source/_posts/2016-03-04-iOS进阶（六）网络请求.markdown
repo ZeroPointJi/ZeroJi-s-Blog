@@ -1,0 +1,213 @@
+---
+title:  "iOS进阶（六）网络请求"
+date:   2016-03-04 17:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## HTTP和HTTPS协议
+
+- `HTTP`协议，超文本传输协议，是用于从`www`服务器传送超文本到本地浏览器的传输协议。
+- `HTTPS`协议，安全超文本传输协议，是一个安全通信通道。使用安全套接字层（`SSL`）进行信息交换，即使用`SSL`在发送方把*原始数据加密*，然后由接受方解密。
+
+## GET和POST请求
+
+不同点:
+
+1. 给*服务器传输数据*的方式不同:
+
+    - GET：通过网址字符串
+    - POST：通过NSData
+
+2. 传输*数据的大小*：
+
+    - GET：地址字符串最多`255`字节
+    - POST：使用NSData，容量超过1G
+
+3. 安全性：
+
+    - GET：所有传输给服务器的数据，现实在网址里面，类似于密码的明文输入，直接可见。
+    - POST：数据被转成NSData（二进制数据），类似于密码的密文输入，无法直接读取。
+
+为了使App能接受网络数据，需要修改info.plist文件。
+
+在其中添加`App Transport Security Settings`字典，在字典中添加`Allow Arbitrary Loads`,设置值为`YES`。
+
+## 同步与异步连接
+
+- 同步连接：程序容易出现卡死现象。
+- 异步链接：等待数据返回。
+- 异步链接有两种实现方式：
+
+    1. 设置代理，接受数据
+    2. 实现block
+
+## 同步GET
+
+```objc
+// 创建网址连接字符串
+NSString *urlStr = @"http://ipad-bjwb.bjd.com.cn/DigitalPublication/publish/Handler/APINewsList.ashx?date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213";
+// 创建一个保存连接字符串的NSURL对象
+NSURL *url = [NSURL URLWithString:urlStr];
+// 创建网络请求对象
+NSURLRequest *request = [[NSURLRequest alloc] initWithURL:url cachePolicy: NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+// 网络链接，讲创建好的网络请求发送给服务器
+NSData *urlData = [NSURLConnection sendSynchronousRequest:request returnningResponse:nil error:nil];
+```
+
+`urlData`就是获取的数据，用`NSJSONSerialization`就可以解析。
+
+## 同步POST
+
+```objc
+// 创建一个网络连接字符串
+NSString *urlStr = @"http://ipad-bjwb.bjd.com.cn/DigitalPublication/publish/Handler/APINewsList.ashx?date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213";
+// 创建一个NSURL对象，保存网络连接字符串
+NSURL *url = [NSURL URLWithString:urlStr];
+// 创建网络请求
+// 因为NSURLRequest这个类，默认请求方式是GET请求，如果需要POST请求，只能使用NSMutableURLRequest来创建POST请求
+NSMutableURLRequest *mRequest = [NSMutableURLRequest requestWithURL:url];
+// 指定请求方式
+[mRequest setHTTPMethod:@"POST"];
+[mRequest setHTTPBody:[@"date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213" dataUsingEncoding:NSUTF8StringEncoding]];
+// 发送请求
+NSData *urlData = [NSURLConnection sendSynchronousRequest:mRequest returningResponse:nil error:nil];
+```
+
+`setHTTPBody:`方法，设置请求需要的参数。
+
+## 异步代理GET
+
+首先，设置代理并和服务端进行连接。
+
+```objc
+// 创建网址链接字符串
+NSString *urlStr = @"http://ipad-bjwb.bjd.com.cn/DigitalPublication/publish/Handler/APINewsList.ashx?date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213";
+// 创建一个保存网址链接字符串的NSURL对象
+NSURL *url = [NSURL URLWithString:urlStr];
+// 创建网络请求对象
+NSURLRequest *request = [[NSURLRequest alloc] initWithURL:url cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10];
+// 1.异步代理
+[NSURLConnection connectionWithRequest:request delegate:self];
+// 2.
+//NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self];
+//[connection start];
+```
+
+接受代理`NSURLConnectionDataDelegate`后，执行代理方法。
+
+```objc
+// 服务器接收到请求之后，会给你做出回应，这个方法的执行，代表请求过程开始。
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+{
+    NSLog(@"%s, %d", __FUNCTION__, __LINE__);
+    // 在接受数据之前，容器一定要进行初始化。
+    // 我选择懒加载
+
+}
+
+// 当接受数据时执行
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+{
+    NSLog(@"%s, %d", __FUNCTION__, __LINE__);
+    // 拼接数据
+    [self.mData appendData:data];
+
+}
+
+// 当数据接受完毕时执行
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
+    NSLog(@"%s, %d", __FUNCTION__, __LINE__);
+    NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:self.mData options:NSJSONReadingMutableContainers | NSJSONReadingMutableLeaves error:nil];
+    NSLog(@"%@", dic);
+
+}
+
+// 当出现错误时执行
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error
+{
+
+}
+```
+
+## 异步Block POST请求
+
+```objc
+// 创建一个网址链接字符串
+NSString *urlStr = @"http://ipad-bjwb.bjd.com.cn/DigitalPublication/publish/Handler/APINewsList.ashx";
+// 创建一个NSURL对象，保存网址链接字符串
+NSURL *url = [NSURL URLWithString:urlStr];
+// 创建网络请求
+// 因为NSURLRequest这个类，默认请求方式是GET请求，如果我们执行请求方式为POST，只能使用NSMutableURLRequest来创建POST请求
+NSMutableURLRequest *mRequest = [NSMutableURLRequest requestWithURL:url];
+// 指定请求方式
+[mRequest setHTTPMethod:@"POST"];
+[mRequest setHTTPBody:[@"date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213" dataUsingEncoding:NSUTF8StringEncoding]];
+// 发送请求
+[NSURLConnection sendAsynchronousRequest:mRequest queue:[NSOperationQueue mainQueue]  completionHandler:^(NSURLResponse * _Nullable response, NSData * _Nullable data, NSError * _Nullable connectionError) {
+// 解析
+NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers :call <SNR>118_align()
+a NSJSONReadingMutableLeaves error:nil];
+NSLog(@"%@", dic);
+```
+
+> 以上的方法在iOS9.0之后被废弃，转用NSURLSession类。`NSURLSession`是高度异步的，所以不存在同步请求。
+
+## NSURLSession Block异步请求
+
+```objc
+// 创建一个NSURLSession对象
+NSURLSession *session = [NSURLSession sharedSession];
+// 创建一个NSURL对象
+NSURL *url = [NSURL URLWithString:@"http://ipad-bjwb.bjd.com.cn/DigitalPublication/publish/Handler/APINewsList.ashx?date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213"];
+// NSURLSessionDownloadTask 下载任务
+// NSURLSessionUploadTask 上传任务
+// NSURLSessionDataTask 获取数据
+NSURLSessionDataTask *dataTask = [session dataTaskWithURL:url completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+// 解析
+    NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers | NSJSONReadingMutableLeaves error:nil];
+    NSLog(@"%@", dic);
+}];
+// 不管什么任务，创建之后，需要执行开始操作。
+[dataTask resume];
+```
+
+## NSURLSession 代理异步请求
+
+首先，接受代理并且执行请求。
+
+```objc
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration] delegate:self delegateQueue:[NSOperationQueue mainQueue]];
+    NSURLSessionDataTask *dataTast = [session dataTaskWithURL:[NSURL URLWithString:@"http://ipad-bjwb.bjd.com.cn/DigitalPublication/publish/Handler/APINewsList.ashx?date=20131129&startRecord=1&len=5&udid=1234567890&terminalType=Iphone&cid=213"]];
+    [dataTast resume];
+```
+
+然后接受`NSURLSessionDataDelegate`代理并且执行方法。
+
+```objc
+// 响应开始，服务器接收到请求之后执行这个方法。
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveResponse:(NSURLResponse *)response completionHandler:(void (^)(NSURLSessionResponseDisposition))completionHandler
+{
+    NSLog(@"%s %d", __FUNCTION__, __LINE__);
+    completionHandler(NSURLSessionResponseAllow);
+
+}
+
+// 接收数据的方法
+- (void)URLSession:(NSURLSession *)session dataTask:(NSURLSessionDataTask *)dataTask didReceiveData:(NSData *)data
+{
+    NSLog(@"%s %d", __FUNCTION__, __LINE__);
+    [self.mData appendData:data];
+
+}
+
+// 请求结束，数据获取完毕的方法。
+- (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error
+{
+    NSLog(@"%s %d", __FUNCTION__, __LINE__);
+    NSDictionary *dic = [NSJSONSerialization JSONObjectWithData:self.mData options:NSJSONReadingMutableContainers :call <SNR>118_align()
+    a NSJSONReadingMutableLeaves error:nil];
+    NSLog(@"%@", dic);
+}
+```
+

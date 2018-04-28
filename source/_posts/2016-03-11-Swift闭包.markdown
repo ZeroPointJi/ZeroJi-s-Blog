@@ -1,0 +1,161 @@
+---
+title:  "Swift(六)闭包"
+date:   2016-03-10 16:00:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 闭包基础语法
+
+```swift
+let names = ["Chirs", "Alex", "ewa", "Barray", "Daniella"]
+func backwards(s1: String, _ s2: String) -> Bool {
+    return s1 > s2
+}
+var reversed = names.sort(backwards)
+print(reversed)
+
+reversed = names.sort({ (s1: String, s2: String) -> Bool in
+    return s1 > s2
+})
+print(reversed)
+```
+
+## 根据上下文推断类型
+
+```swift
+reversed = names.sort( { (s1, s2) -> Bool in
+    return s1 > s2
+} )
+print(reversed)
+```
+
+## 单表达式闭包隐式返回
+
+```swift
+reversed = names.sort ({ (s1, s2) in
+    s1 > s2
+})
+```
+
+## 参数名称缩写
+
+```swift
+reversed = names.sort({ $0 > $1 })
+```
+
+## 运算符函数
+
+```swift
+reversed = names.sort(>)
+```
+
+写到这里,我只想说,缩减的丧心病狂的Swift...
+
+## 尾闭包
+
+```swift
+func someFunctionThatTakesAClousure(closure: () -> Void) {
+    // 函数体部分
+}
+
+// 不是尾随闭包的函数调用
+someFunctionThatTakesAClousure { () -> Void in
+    // 闭包主体部分
+}
+// 尾随闭包的函数调用
+someFunctionThatTakesAClousure() {
+    // 闭包主体部分 
+}
+
+let digiNames = [
+    0: "Zero", 1: "One", 2: "Two",   3: "Three", 4: "Four",
+    5: "Five", 6: "Six", 7: "Seven", 8: "Eight", 9: "Nine"
+]
+let numbers = [16,58,510]
+let strings = numbers.map { (var number) -> String in
+    var output = ""
+    while number > 0 {
+        output = digiNames[number % 10]! + output
+        number /= 10
+    }
+    return output
+}
+```
+
+## 捕获值
+
+```swift
+func makeIncrementor(forIncrement amount: Int) -> () -> Int
+{
+    var runningTotal = 0
+    func incrementor() -> Int {
+        runningTotal += amount
+        return runningTotal
+    }
+    return incrementor
+}
+let incrementByTen = makeIncrementor(forIncrement: 10)
+print(incrementByTen)
+print(incrementByTen)
+print(incrementByTen)
+
+let incrementBySeven = makeIncrementor(forIncrement: 7)
+print(incrementBySeven)
+
+print(incrementByTen)
+
+let alseIncrementByTen = incrementByTen
+print(alseIncrementByTen)
+```
+
+## 非逃逸闭包
+
+```swift
+someFunctionWithNoescapeClosure(@noescape closure: () -> Void)
+{
+    closure()
+}
+
+var completionHandlers: [() -> Void] = []
+func someFunctionWithEscapingClosure(completionHandler:() -> Void) {
+    completionHandlers.append(completionHandler)
+}
+
+class SomeClass {
+    var x = 10
+    func doSometing() {
+        someFunctionWithEscapingClosure{ self.x = 100  }
+        someFunctionWithNoescapeClosure{ x = 200  }
+    }
+}
+let instance = SomeClass()
+instance.doSometing()
+print(instance.x)
+completionHandlers.first?()
+print(instance.x)
+
+```
+
+## 自动闭包
+
+```swift
+// 关键字 @autoclosure
+var customersInline = ["Chris", "Alex", "Ewa", "Barry", "Daniella"]
+print(customersInline.count)
+
+let customerProvider = { customersInline.removeFirst()  }
+print(customersInline.count)
+
+print("noew serving \(customerProvider())!")
+
+func serveCustomer(customerProvider: () -> String) {
+    print("noew serving \(customerProvider())!")
+}
+serveCustomer({ customersInline.removeFirst() })
+
+func serveCustomer(@autoclosure customerProvider: () -> String) {
+    print("noew serving \(customerProvider())!")
+}
+serveCustomer(customersInline.removeFirst())
+
+```

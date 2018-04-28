@@ -1,0 +1,42 @@
+---
+title:  "Swift OC 混编"
+date:   2016-04-15 11:05:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## Swift 中导入 OC
+
+#### 方法一
+
+当创建或者手动导入 `OC` 到 `Swift` 项目中的时候, `Xcode` 会自动提示是否创建桥接文件, 然后在桥接文件中添加要使用的 `OC` 头文件即可.
+
+#### 方法二
+
+如果错过了上面的方法, 可以手动创建桥接文件.
+
+`cmd` + `n` 创建新文件, 选择 `Header File`, 并且将其命名为 `xxxx-Brigding-Header.h`.
+
+#### 写入要桥接的文件的头文件
+
+在文件中写入
+
+```
+#import "xxxx.h"
+```
+
+另外需要在项目中进行配置, 指定创建的文件为桥接文件.
+
+项目 -> Builde Setting -> Objective Bridging Header 中的值设置为 xxxx-Brigding-Header.h.
+
+---
+
+完成后就可以在 `.Swift` 文件中使用 `OC` 中的类, 包括第三方类库.
+
+## OC 中导入 Swift
+
+1. 在项目设置查找中输入 `module`
+2. 找到 `Defines Module` 选项设置为 `YES`
+3. 在要使用 `Swift` 的类中导入头文件, `ProductName-Swift.h` 其中 `ProductName` 为当前的工程名
+
+完成后即可以在 `OC` 中使用 `Swift` 类.
+

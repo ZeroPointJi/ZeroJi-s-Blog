@@ -1,0 +1,213 @@
+---
+title:  "Swift (二十二) 泛型"
+date:   2016-03-30 19:50:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 泛型函数
+
+泛型函数可以使用于任何类型
+
+```swift
+func swapTwoValues<T>(inout a: T, inout _ b: T)
+{
+    let temporaryA = a
+    a = b
+    b = temporaryA
+}
+var someInt = 3
+var anotherInt = 107
+swapTwoValues(&someInt, &anotherInt)
+print("someInt = \(someInt), anotherInt = \(anotherInt)")
+
+var someString = "hello"
+var anotherString = "world"
+swapTwoValues(&someString, &anotherString)
+print("someString = \(someString), anotherString = \(anotherString)")</T>
+```
+
+## 类型参数
+
+- 类型参数指定并命名一个占位类型, 并且紧跟在函数名后面, 使用一堆尖括号括起来 (例如`<T>`).
+- 一旦一个类型参数被指定, 你可以用它来定义一个函数的参数类型, 或者作为函数的返回类型, 还可以作为函数主体中的注释类型.
+- 在以上的情况下, 类型参数会在函数调用时被实例类型所代替.
+
+## 命名类型参数
+
+在大多数情况下, 类型参数具有一个描述性名字, 例如 `Dictionary<Key, Value>` 中的 `key` 和 `value`, 这可以告诉阅读代码的人这些类型参数和泛型函数之间的关系.
+
+然而, 当它们之间的关系没有意义时, 通常用单一的字母来命名, 例如 `T` `U` `V`.
+
+## 泛型类型
+
+除了泛型函数, `Swift` 可以定义泛型函数.
+
+这些自定义类 结构体 枚举可以使用于任何类型, 如同 `Array` 和 `Dictionary` 的用法.
+
+```swift
+struct Stack<Element>
+{
+    var items = [Element]()
+    mutating func push(item: Element) {
+        items.append(item)
+    }
+    mutating func pop() -> Element {
+        return items.removeLast()
+    }
+}
+var stackOfStrings = Stack<String>()
+stackOfStrings.push("uno")
+stackOfStrings.push("dos")
+stackOfStrings.push("tres")
+stackOfStrings.push("cuatro")
+let fromTheTop = stackOfStrings.pop()</String>
+```
+
+## 扩展一个泛型类型
+
+当扩展一个泛型类型的时候, 不需要在扩展的定义中提供类型参数列表
+
+原始类型定义中声明的类型参数列表在扩展中可以直接使用, 并且这些来自原始类型中的参数名称会被用作原始定义中类型参数的引用
+
+```swift
+extension Stack
+{
+    var topItem: Element? {
+        return items.isEmpty ? nil : items[items.count - 1]
+    }
+}
+
+if let topItem = stackOfStrings.topItem {
+    print("The top item on the stack is \(topItem)")
+}
+```
+
+## 类型约束
+
+类型的约束可以指定一个类型参数必须继承自指定类, 或者符合一个特定的协议或协议组合
+
+```swift
+func someFunction<T: SomeClass, U: SomeProtocol>(someT: T, someU: U)
+{
+    // 这里是泛型函数的函数体部分
+}
+
+func findStringIndex(array: [String], _ valueToFind: String) -> Int?
+{
+    for (index, value) in array.enumerate() {
+        if value == valueToFind {
+            return index
+        }
+    }
+    return nil
+}
+let strings = ["cat", "dog", "llama", "parakeet", "terrapin"]
+if let foundIndex = findStringIndex(strings, "llama") {
+    print("The index of llama is \(foundIndex)")
+}
+func findIndex<T: Equatable>(array: [T], _ valueToFind: T) -> Int?// Swift 标准库中定义了一个 Equatable 协议, 该协议要求任何符合该协议的类型必须实现等式符(==), 从而能对符合该协议的类型的两个值进行比较.
+{
+    for (index, value) in array.enumerate() {
+        if value == valueToFind {
+            return index
+        }
+    }
+    return nil
+}
+let doubleIndex = findIndex([3.14159, 0.1, 0.25], 9.3)
+let stringIndex = findIndex(["Mike", "Malcolm", "Andrea"], "Andrea")
+```
+
+## 关联类型
+
+- 定义一个协议时, 有的时候声明一个或多个关联类型作为协议定义的一部分将会非常有用.
+- 关联类型作为协议的一部分, 为某个类型提供了一个占位名, 其代表的实际类型在协议被采纳时才会被指定.
+- 通过 `typealias` 关键字来指定关联类型.
+
+```swift
+protocol Container
+{
+    typealias ItemType
+    mutating  func  append(item: ItemType)
+    var count: Int { get  }
+    subscript(i: Int) -> ItemType { get  }
+}
+struct IntStack: Container
+{
+    var items = [Int]()
+    mutating func push(item: Int) {
+        items.append(item)
+    }
+    mutating func pop() -> Int {
+        return items.removeLast()
+    }
+    typealias ItemType = Int
+    mutating func append(item: ItemType) {
+        self.push(item)
+    }
+    var count: Int {
+        return items.count
+    }
+    subscript(i: Int) -> Int {
+        return items[i]
+    }
+}
+struct Stack<Element>: Container
+{
+    var items = [Element]()
+    mutating func push(item: Element) {
+        items.append(item)
+    }
+    mutating func pop() -> Element {
+       return items.removeLast()
+    }
+    mutating func append(item: Element) {
+        self.push(item)
+    }
+    var count: Int {
+        return items.count
+    }
+    subscript(i: Int) -> Element {
+        return items[i]
+    }
+}
+```
+
+## where 子句
+
+可以在参数列表中通过 `where` 子句为关联类型定义约束
+
+```swift
+func allItemsMatch<C1: Container, C2: Container where C1.ItemType == C2.ItemType, C1.ItemType: Equatable>(someContainer: C1, _ anotherContainer: C2) -> Bool {
+    // 检查两个容器含有相同数量的元素
+    if someContainer.count != anotherContainer.count {
+        return false
+    }
+            
+    // 检查每一对元素是否相等
+    for i in 0..<someContainer.count {
+        if someContainer[i] != anotherContainer[i] {
+            return false
+        }
+    }
+            
+    // 所有元素都匹配，返回 true
+    return true
+}
+                            
+var secondForLoop = 0
+var newStackOfStrings = Stack<String>()
+newStackOfStrings.push("uno")
+newStackOfStrings.push("dos")
+newStackOfStrings.push("tres")
+
+var arrayOfStrings = ["uno", "dos", "tres"]
+
+if allItemsMatch(newStackOfStrings, arrayOfStrings) {
+    print("All items match.")
+} else {
+    print("Not all items match.")
+}
+```
+
+

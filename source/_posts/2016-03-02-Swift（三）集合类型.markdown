@@ -1,0 +1,294 @@
+---
+title:  "Switf（三）集合类型"
+date:   2016-03-01 20:40:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 集合的可变性
+
+声明为`let`类型的为不可变集合，声明为`var`类型的为可变集合。
+
+```swift
+var mArr = ["1", "2"] // 可变集合
+let arr = ["1", "2"] // 不可变集合
+```
+
+> 注意，数组有序，集合与字典无序。
+
+## 创建空数组
+
+```swift
+var someInts = [Int]() // 创建一个元素类型是Int的数组
+print(someInts)
+someInts.append(3) // 在数组最后一个元素后面添加一个元素，值为3
+print(someInts)
+someInts = [] // someInts类型依然是[Int]类型，但是数组内没有元素
+print(someInts)
+```
+
+## 创建带有默认值的数组
+
+`Double(count:repeatedValue:)`创建一个内部元素个数是`count`，且默认值是`repeatedValue`的数组。
+
+```swift
+var threeDboules = [Double](count:3, repeatedValue:0.0)
+print(threeDoubles)
+```
+
+## 通过两个数组相加创建一个数组
+
+```swift
+var anotherThreeDoubles = Array(count:3, repeatedValue:2.5) // anotherThreeDoubles 被推断为[Double]类型
+var sixDoubles = threeDoubles + anotherThreeDoubles
+print(sixDoubles)
+```
+
+## 通过字面量创建数组
+
+```swift
+var shoppingList = ["Eggs", "Milk"] // 被自动推断为[String]类型
+print(shoppingList)
+```
+
+## 访问和修改数组
+
+`count`属性，获取数组中元素的个数。
+
+```swift
+print(shoppingList.count)
+```
+
+`isEmpty`属性，如果数组为空则返回`true`，反之返回`false`。
+
+```swift
+if shoppingList.isEmpty {
+    print("is Empty")
+} else {
+    print("not Empty")
+}
+```
+
+`append(_)`在数组最后一个元素后添加一个元素。
+
+```swift
+shoppingList.append("Flour")
+print(shoppingList)
+```
+
+`+`，添加一个数组到最后一个元素后。
+
+```swift
+shoppingList += ["Baking Powder"]
+print(shoppingList)
+```
+
+以下标获取或者修改对应元素。
+
+```swift
+var firstItem = shoppingList[0] 
+print(firstItem)
+
+shoppingList[0] = "Six eggs" 
+print(shoppingList)
+
+shoppingList[1...3] = ["Bananas", "Apples"] // 替换下标从1到3的元素
+```
+
+- `insert(_, atIndex:)`在下标为`_`的元素前添加一个元素。
+- `removeAtIndex(_)`移除下标为`_`的元素。
+- `removeLast()`移除最后一个元素。
+
+```swift
+shoppingList.insert("Maple Syrup", atIndex: 0) 
+print(shoppingList)
+
+shoppingList.removeAtIndex(0) 
+print(shoppingList)
+
+shoppingList.removeLast() 
+print(shoppingList)
+```
+
+## 数组遍历
+
+```swift
+for item in shoppingList {
+    print(item)
+}
+```
+
+`enumerate()`返回(index, value)元组。
+
+```swift
+for (index, value) in shoppingList.enumerate() {
+    print("item \(String(index + 1)) : \(value)")
+}
+```
+
+## 创建和构造一个空集合
+
+```swift
+var letters = Set<Character>()
+letters.insert("a")
+letters = []
+```
+
+## 字面量创建集合
+
+```swift
+// 用字面量创建集合
+//var favoriteGenres: Set<String> = ["Rock", "Classical", "Hip hop"]
+var favoriteGenres: Set = ["Rock", "Classical", "Hip hop"]; // 上面语句的简化
+```
+
+## 访问和修改一个集合
+
+`count`属性，返回集合中的元素个数。
+`insert(_)`插入一个元素。
+
+```swift
+print(favoriteGenres.count) // 输出元素个数
+if favoriteGenres.isEmpty {
+    print("is Empty")
+} else {
+    print("not Empty")
+}
+favoriteGenres.insert("Jazz")
+print(favoriteGenres)
+```
+## 遍历一个集合
+
+```swift
+for genre in favoriteGenres {
+    print(genre)
+}
+
+for genre in favoriteGenres.sort() { // sort()方法，将集合排序
+    print(genre)
+}
+```
+
+## 集合操作
+
+- 使用`intersect(_:)`方法根据两个集合中都包含的值创建的一个新的集合。
+- 使用`exclusiveOr(_:)`方法根据在一个集合中但不在两个集合中的值创建一个新的集合。
+- 使用`union(_:)`方法根据两个集合的值创建一个新的集合。
+- 使用`subtract(_:)`方法根据不在该集合中的值创建一个新的集合。
+
+```swift
+let oddDigits: Set = [1, 3, 5, 7, 9]
+let evenDigits: Set = [0, 2, 4, 6, 8]
+let singleDigitPrimeNumbers: Set = [2, 3, 5, 7]
+
+print(oddDigits.union(evenDigits).sort())
+print(oddDigits.intersect(evenDigits).sort())
+print(oddDigits.subtract(singleDigitPrimeNumbers).sort())
+print(oddDigits.exclusiveOr(singleDigitPrimeNumbers).sort())
+```
+
+- 使用“是否相等”运算符(`==`)来判断两个集合是否包含全部相同的值。
+- 使用`isSubsetOf(_:)`方法来判断一个集合中的值是否也被包含在另外一个集合中。
+- 使用`isSupersetOf(_:)`方法来判断一个集合中包含另一个集合中所有的值。
+- 使用`isStrictSubsetOf(_:)`或者isStrictSupersetOf(_:)方法来判断一个集合是否是另外一个集合的子集合或者父集合并且两个集合并不相等。
+- 使用`isDisjointWith(_:)`方法来判断两个集合是否不含有相同的值(是否没有交集)。
+
+```swift
+let houseAnimals: Set = ["🐶", "🐱"]
+let farmAnimals: Set = ["🐮", "🐔", "🐑", "🐶", "🐱"]
+let cityAnimals: Set = ["🐦", "🐭"]
+
+print(houseAnimals == cityAnimals)
+print(houseAnimals.isSubsetOf(farmAnimals))
+print(farmAnimals.isSupersetOf(houseAnimals))
+print(farmAnimals.isDisjointWith(cityAnimals))
+print(houseAnimals.isDisjointWith(cityAnimals))
+```
+
+## 创建一个空字典
+
+`[Int: String]()`创建一个键为Int类型，值为String类型的字典。
+
+```swift
+var namesOfIntegers = [Int: String]()
+namesOfIntegers[16] = "sixteen";
+print(namesOfIntegers)
+namesOfIntegers = [:] // 空字典
+print(namesOfIntegers)
+```
+
+## 字面量创建字典
+
+```swift
+//var airports: [String: String] = ["YYZ": "Toronto Pearson", "DUB": "Dublin"]
+var airports = ["YYZ": "Toronto Pearson", "DUB": "Dublin"] // 简化后的语句
+print(airports)
+```
+
+## 访问和修改字典
+
+`count`属性，获取字典的键值对个数。
+
+```swift
+print(airports.count)
+if airports.isEmpty {
+    print("is Empty")
+} else {
+    print("not Empty")
+}
+
+airports["LHR"] = "London" // 添加一个健为"LHR"，值为"London"的键值对
+airports["LHR"] = "London Heathrow" // 修改一个键为"LHR"的键值对的值为"London Heathrow"
+```
+
+`updateValue(_:forKey:)` 返回一个旧值，如果没有值存在于更新前，返回nil，返回的值为*可选类型*，需要*解析*。
+
+`removeValueForKey(_)`返回一个已经被删除的可选类型或者nil。
+
+```swift
+if let oldValue = airports.updateValue("Dublin Airport", forKey: "DUB") { 
+    print(oldValue)
+}
+if let airportName = airports["DUB"] { // airports["DUB"] 返回值为可选类型。
+    print(airportName)
+} else {
+    print("not has any value")
+}
+if let removeValue = airports.removeValueForKey("DUB") { 
+    print(removeValue)
+} else {
+    print("not has any value")
+}
+
+airports["APL"] = "Apple Internation"
+airports["APL"] = nil // 移除键为"APL"的键值对
+```
+
+## 遍历字典
+
+```swift
+for (airportCode, airportName) in airports {
+    print("\(airportCode) : \(airportName)")
+}
+```
+
+`keys`属性，当前字典的所有键。
+`values`属性，当前字典的所有值。
+
+```swift
+for airportsCode in airports.keys { // keys属性，获取当前字典的所有键
+    print(airportsCode)
+}
+
+for airportName in airports.values { // values属性，获取当前字典的所有值
+    print(airportName)
+}
+```
+
+`keys`和`values`必须使用`[String]()`才可读，否侧无法以字符串使用。
+
+```swift
+let airportCodes = [String](airports.keys)
+print(airportCodes)
+let airportNames = [String](airports.values)
+print(airportNames)
+```

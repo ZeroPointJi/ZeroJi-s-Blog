@@ -1,0 +1,297 @@
+---
+title:  "iOS进阶（十九）地图"
+date:   2016-03-24 19:10:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 地图定位
+
+使用 `CoreLocation` 框架, 进行地理编码与反地理编码
+
+在 `iOS5` 之前, 要使用 `CoreLocation` 框架需要导入 `CoreLocation.framework` .
+
+在 `iOS5` 之后, 如果要使用, 直接引入头文件 `CoreLocation/CoreLocation.h` 即可.
+
+- 框架中所有数据类型的前缀都是 `CL`
+- 框架中使用 `CLLocationManager` 对象来做用户定位
+
+`CLLocationManager` 的常用操作
+
+```objc
+// 开始用户定位
+- (void)startUpdatingLocation;
+// 停止用户定位
+- (void)stopUpdatingLocation;
+
+// 当调用了 startUpdatingLocation 方法后, 就开始不断地定位用户的位置, 定位时会频繁的调用下面的代理方法
+- (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations;
+```
+
+`CLLocationManager` 的常用属性
+
+- `CLLocationDistance distanceFilter` 每隔多少米定位一次
+- `CLLocationAccuracy desiredAccuracy` 定位精准度 (越精准越耗电)
+
+`CLLocationAccuracy` 的枚举值
+
+- `kCLLocationAccuracyBestForNavigation` 最佳导航
+- `kCLLocationAccuracyBest` 最精准
+- `kCLLocationAccuracyNearestTenMeters` 精确到10米
+- `kCLLocationAccuracyHundredMeters` 精确到100米
+- `kCLLocationAccuracyKilometer` 精确到1000米
+- `kCLLocationAccuracyThreeKilometers` 精确到3000米
+
+### 实现定位
+
+1. 创建管理者对象 
+
+```objc
+self.manager = [[CLLocationManager alloc] init];
+```
+
+2. 设置代理
+
+```objc
+self.manager.delegate = self;
+```
+
+3. 开启定位
+
+```objc
+[self.manager startUpdatingLocaton];
+```
+
+> 需要注意, `iOS 7.0` 之后, 系统增强了对用户信息的安全保护, 如果想要访问用户的相册, 相机之类的隐私文件, 需要征求用户的同意. 这个过程叫做请求访问权限. 在 `iOS 8.0` 之后, 针对地图做出了相应的改变, 不会自动请求访问权限, 需要我们自动通过代码的方式申请访问权限.
+
+### 请求授权
+
+```objc
+if ([[UIDevice currentDevice].systemVersion doubleValue] >= 8.0) {
+    // 需要我们手动请求用户对我们的应用程序授权
+    [self.locationManager requestAlwaysAuthorization]; // 后台前台都可以使用定位服务
+    //[self.locationManager requestWhenInUseAuthorization]; // 前台可以使用定位服务
+}
+```
+
+请求光以上代码还不行, 需要在 `info.plist` 文件中设置. 根据代码中请求用户授权的方式选择, 添加 `NSLocationAlwaysUsageDescription` 或者 `NSLocationWhenInUseUsageDescription`, 并且在后面填写需要提示用户的语句.
+
+然后在代理方法中判断并开启定位
+
+```objc
+// 参数1: 管理对象. 参数2: 状态信息
+- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status
+{
+    if (status == kCLAuthorizationStatusAuthorizedAlways || status == kCLAuthorizationStatusAuthorizedWhenInUse) {
+        // 开始更新位置信息
+        [self.locationManager startUpdatingLocation];
+    }
+}
+```
+
+使用 `CLLocation` 来表示某个位置的地理信息.
+
+- `CLLocationCoordinate2D coordinate` 经纬度
+- `CLLocationDistance altitude` 海拔
+- `CLLocationDirection course` 方向 (取值范围是 0.0° ~ 359.9°, 0.0° 代表正北方向)
+- `CLLocationSpeed speed` 行走速度 (单位 `m/s`)
+
+还有一个方法, 用来计算两个位置 (`CLLocation`) 之间的距离
+
+```objc
+- (CLLocationDistance)distanceFromLocation:(const CLLocation *)location;
+```
+
+`CLLocationCoordinate2D` 是一个用来表示经纬度的结构体, 定义如下
+
+```objc
+typedef struct {
+    CLLocationDegrees latitude; // 纬度
+    CLLocationDegrees longitude; // 经度
+}
+
+```
+
+一般使用 `CLLocationCoordinate2DMake` 来创建.
+
+### 地理编码与地理反编码
+
+使用 `CLGeocoder` 可以完成.
+
+- 地理编码: 根据给定的地名, 获得具体的位置信息.
+- 地理反编码: 根据给定的经纬度, 获得具体的位置信息.
+
+地理编码
+
+```objc
+- (void)geocodeAddressString:(NSString *)addressString completionHandler:(CLGeocodeCompletionHandler)completionHandler;
+```
+
+地理反编码
+
+```objc
+- (void)reverseGeocodeLocation:(CLLocation *) location completionHandler:(CLGeocodeCompletionHandler)completionHandler;
+```
+
+当地理编码/反编码完成时, 就会调用 `CLGeocodeCompletionHandler`.
+
+`CLGeocodeCompletionHandler` 的定义为
+
+```objc
+typedef (^CLGeocodeCompletionHandler)(NSArray<CLPlacemark *> * _Nullable placemarks, NSError * _Nullable error);
+```
+
+`CLPlacemark` 地标, 封装详细的地址位置信息.
+
+属性
+
+1. `CLLocation *location` 地理位置
+2. `CLRegion *region` 区域
+3. `NSDictionary *addressDictionary` 详细的地址信息
+4. `NSString` 地址名称
+5. `NSString` 地点名称
+
+## 地图显示
+
+导入框架 `MapKit.framework`
+
+导入头文件 `MapKit/MapKit.h`
+
+`MapKit` 框架使用
+
+- 框架中所有数据类型的前缀都是 `MK`
+- 框架有一个比较重要的 `UI` 控件: `MKMapView`, 专门用于地图显示.
+
+设置 `KMMapView` 的 `userTrackingMode`(枚举型) 属性可以跟踪显示用户的当前位置
+
+- `MKUserTrackingModeNone` 不跟踪用户的位置
+- `MKUserTrackingModeFollow` 跟踪并在地图上显示用户的当前位置
+- `MKUserTrackingModeFollowWithHeading` 跟踪并在地图上显示用户的当前位置, 地图会跟随用户的前进方向进行旋转
+
+跟踪效果
+
+- 蓝色发光远点就是用户的当前位置
+- 蓝色发光远点, 专业术语叫做 "大头针"
+
+设置 `MKMapView` 的 `mapType`(枚举型) 来设置地图类型.
+
+- `MKMapTypeStandard = 0` 普通地图
+- `MKMapTypeSatellite` 卫星云图
+- `MKMapTypeHybrid` 普通地图覆盖于卫星云图之上
+- `MKMapTypeSatelliteFlyover` 地形和建筑物的三维模型
+- `MKMapTypeHybridFlyover` 显示道路和附加元素的天桥
+
+`MKMapView` 代理方法
+
+```objc
+// 一个位置更改默认只会调用一次, 不断监测用户的当前位置时, 每次都会调用这个方法, 把用户的最新位置传进来.
+- (void)mapView:(MKMapView *)mapView didUpdateUserLocation:(MKUserLocation *)userLocation;
+
+// 地图的显示区域即将发生改变的时候调用
+- (void)mapView:(MKMapView *)mapView regionWillChangeAnimated:(BOOL)animated;
+
+// 地图的显示区域已经发生改变的时候调用
+- (void)mapView:(MKMapView *)mapView regionDidChangeAnimated:(BOOL)animated;
+```
+
+`MKUserLocation` 其实是个大头针模型, 有以下属性
+
+- `NSString *title` 显示在大头针上的标题
+- `NSString *subtitle` 显示在大头针上的子标题
+- `CLLocation *location` 地理位置信息(大头针的位置)
+
+### 设置地图的显示
+
+`MKMapView` 属性
+
+- `CLLocationCoordinate2D centerCoordinate` 移动地图中心到某个位置
+
+```objc
+// 与属性的区别仅仅在于是否有动画效果
+- (void)setCenterCoordinate:(CLLocationCoordinate2D)coordinate animated:(BOOL)animated;
+```
+
+- `MKCoordinateRegion region` 设置地图显示区域
+
+```objc
+// 与属性的区别仅仅在于是否有动画效果
+- (void)setRegion:(MKCoordinateRegion)region animated:(BOOl)animated;
+```
+
+`MKCoordinateRegion` 是一个用来显示区域的结构体, 定义如下
+
+```objc
+typedef struct {
+    CLLocationCoordinate2D center;
+    MKCoordinateSpan span;
+} MKCoordinateRegion;
+```
+
+`MKCoordinateSpan` 的定义
+
+```objc
+truct {
+    CLLocationDegrees latitudeDelta;
+    CLLocationDegrees longitudeDelta;
+} MKCoordinateSpan;
+```
+
+## 大头针的基本使用
+
+大头针显示方法, `MKMapView` 调用.
+
+```objc
+- (void)addAnnotation:(id <MKAnnotation>)annotation;
+```
+
+设置大头针视图显示, 必须实现 `MKMapView` 的代理方法.
+
+```objc
+- (MKAnnotationView *)mapView:(MKMapView *) viewForAnnotation:(id<MKAnnotation>)annotation;
+```
+
+大头针视图有循环利用机制.
+
+> 注意: 系统的大头针是不可修改大头针图标的, 必须自定义大头针视图. 自定义大头针要直接或者间接继承 `MKAnnotationView` 类.
+
+```objc
+// 每次添加大头针都会调用这个方法
+- (MKAnnotationView *)mapView:(MKMapView *)mapView viewForAnnotation:(id<MKAnnotation>)annotation
+{
+     static NSString *reuseIdentifier = @"reuse";
+         
+    // 特殊处理, 对当前用户位置上的大头针做特殊处理
+    if (![annotation isKindOfClass:[MyAnnotation class]]) {
+        return nil;
+        // 如果返回的是 nil 系统会根据自己的默认方式进行显示
+    }
+    
+    // 从缓存池中取重用的大头针
+    MKPinAnnotationView *view = (MKPinAnnotationView *)[mapView dequeueReusableAnnotationViewWithIdentifier:reuseIdentifier];
+    
+    // 如果获取不到重用的大头针, 创建新的
+    if (view == nil) {
+        view = [[MKPinAnnotationView alloc] initWithAnnotation:annotation reuseIdentifier:reuseIdentifier];
+    }
+                     
+    // 设置大头针颜色
+    view.pinTintColor = [UIColor grayColor];
+    // 设置大头针是否显示标题
+    view.canShowCallout = YES;
+    // 设置大头针添加时是否有添加效果
+    view.animatesDrop = YES;
+    // 为大头针赋值模型
+    view.annotation = annotation;
+    
+    return view;
+}
+
+```
+
+代理方法
+
+```objc
+// 选中大头针时调用的方法
+- (void)mapView:(MKMapView *)mapView didSelectAnnotationView:(MKAnnotationView *)view;
+// 取消选中大头针时调用的方法
+- (void)mapView:(MKMapView *)mapView didDeselectAnnotationView:(MKAnnotationView *)view;
+```

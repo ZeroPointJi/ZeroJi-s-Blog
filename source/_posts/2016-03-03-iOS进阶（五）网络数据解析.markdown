@@ -1,0 +1,153 @@
+---
+title:  "iOS进阶（五）网络数据解析"
+date:   2016-03-03 17:30:00 +8:00
+categories: Objective-C
+tags: [iOS]
+---
+## 解析的基本概念
+
+解析：从事先规定好的格式中提取数据。
+
+iOS开发常见的解析:`XML`解析，`JSON`解析。
+
+## XML示例
+
+```xml
+<?xml version = "1.0" encoding = "UTF-8"?>
+<Teachers>
+    <Teacher>
+        <name>污源</name>
+        <gender>男</gender>
+        <height>187</height>
+        <hobby>LOL</hobby>
+    </Teacher>
+    <Teacher>
+        <name>瘪犊子</name>
+        <gender>男</gender>
+        <height>173</height>
+        <hobby>修行</hobby>
+    </Teacher>
+    <Teacher>
+        <name>新闻</name>
+        <gender>女</gender>
+        <height>160</height>
+        <hobby>健身</hobby>
+    </Teacher>
+</Teachers>
+```
+解释：在本xml文件中有一个根节点`<Teachers></Teacher>`，其中包含4个叶节点`<teacher></teacher>`。
+
+## 使用DOM工具解析XML
+
+DOM工作原理：以栈的方式读入整个XML文档。
+
+工具：`GDataXMLNode`
+
+使用方法
+
+- 获取`GDagaXMLNode.h/m`文件，将`GDataXMLNode.h/m`文件添加到工程中。
+- 向工程中添加`libxml2.dylib`动态库。
+- 在工程的`Build Settings`页面中找到`Header Search Path`项，添加`/usr/include/libxml2`。
+- 导入`GDataXMLNode.h`文件到头文件中，如工程能编译通过，则说明添加成功。
+
+首先对XML文件进行解析
+
+```objc
+// 获取文件路径
+    NSString *path = [[NSBundle mainBundle] pathForResource:@"Teacher" ofType:@".xml"];
+    // 从文件路径中获取NSData类型的参数
+    NSData *data = [NSData dataWithContentsOfFile:path];
+    // 这行代码执行之后，我们对XML文档的解析已经成功了。在Document中保存的是XML文档的 版本号 编码格式 根节点 叶节点 等所有文档信息。如果我们想要数据，只需要对Document进行处理就可以拿到。
+    GDataXMLDocument *document = [[GDataXMLDocument alloc] initWithData:data options:0 error:nil];
+    NSLog(@"%@", document);
+```
+
+获取根节点下所有子节点的对象。
+
+```objc
+	// 在Document中找到根节点对象
+    GDataXMLElement *root = document.rootElement;
+    // 获取根节点下的所有子节点对象
+    NSArray *arr = root.children;
+```
+
+获取其中的数据有2种方法
+
+一、通过属性找到数据。
+
+```objc
+	GDataXMLElement *root = document.rootElement;
+    NSArray *arr = [root elementsForName:@"Teacher"];
+    GDataXMLElement *name = [[arr[0] elementsForName:@"name"] lastObject];
+    NSLog(@"%@", [name stringValue]);
+```
+
+二、使用方法找到数据。
+
+```objc
+	// 从Document出发，绝对路径
+    GDataXMLElement *name = [[document nodesForXPath:@"Teachers/Teacher/name" error:nil] objectAtIndex:0];
+    NSLog(@"%@", [name stringValue]);
+    
+    // 从根节点出发，绝对路径
+    GDataXMLElement *wuyuan = [[document.rootElement nodesForXPath:@"Teacher/name" error:nil] objectAtIndex:0];
+    NSLog(@"%@", [wuyuan stringValue]);
+    
+    // 相对路径
+    GDataXMLElement *name1 = [[document nodesForXPath:@"//name" error:nil] objectAtIndex:0];
+    NSLog(@"%@", [name1 stringValue]);
+```
+
+## JSON示例
+
+```json
+[
+ {"name":"洪荒", "gender":"女", "age":"1"},
+ {"name":"中二", "gender":"男", "age":"2"},
+ {"name":"66", "gender":"女", "age":"18"}
+]
+```
+
+解释：一个数组中包含3个字典。
+
+## 使用Foundation进行JSON解析
+
+只需2步即可
+
+一、获取JSON文件路径。
+
+```objc
+    NSString *filePath = [[NSBundle mainBundle] pathForResource:@"Student" ofType:@"json"];
+    NSData *data = [NSData dataWithContentsOfFile:filePath];
+```
+
+二、解析JSON数据，使用系统方法JSONObjectWithData:option:error:。
+
+```objc
+	NSArray *arr = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers | NSJSONReadingMutableLeaves error:nil];
+```
+
+## XML优缺点
+
+优点
+1. 格式统一，符合标准。
+2. 容易与其他系统进行远程交互，数据共享比较方便。
+
+缺点
+1. XML格式文件庞大，格式复杂，传输占用带宽。
+2. 服务器端和客户端需要花费大量代码来解析XML。
+3. 客户端不同浏览器之间解析XML的方式不一致。
+4. 服务器端和客户端解析XML花费资源和时间。
+
+## JSON优缺点
+
+优点
+1. 数据格式比较简单，易于读写，格式都是压缩的，占用带宽小。
+2. 易于解析这种语言。
+3. 支持多种语言，便于服务器端解析。
+4. JSON格式能够直接为服务器端代码使用，大大简化了服务器端和客户端的代码开发量，但是完成的任务不变，且易于维护。
+
+缺点
+1. 没有XML格式的使用广泛，没有XMl的通用性。
+2. JSON格式目前在Web Service中推广还属于初级阶段。
+

@@ -1,0 +1,165 @@
+---
+title:  "Swift (十) 类和结构体"
+date:   2016-03-12 16:50:00 +8:00
+categories: Swift
+tags: [Swift]
+---
+## 实例方法
+
+```swift
+class Counter {
+    var count = 0
+    func increment() {
+        ++count
+    }
+    func incrementBy(amount: Int) {
+        count += amount
+    }
+    func reset() {
+        count = 0
+    }
+}
+
+let counter = Counter()
+counter.increment()
+counter.incrementBy(5)
+counter.reset()
+```
+
+## 方法的局部参数名称和外部参数名称
+
+```swift
+class NewCounter {
+    var count: Int = 0
+    func incrementBy(amount: Int, numberOfTimes: Int) {
+        count += amount * numberOfTimes
+    }
+}
+let newCounter = NewCounter()
+newCounter.incrementBy(5, numberOfTimes: 3)
+```
+
+## self属性
+
+用以区分参数名称和属性名称
+
+self 等同于该实例本身
+
+```swift
+struct Point {
+    var x = 0.0, y = 0.0
+    func isToTheRightOfX(x: Double) -> Bool {
+        return self.x > x
+    }
+}
+let somePoint = Point(x: 4.0, y: 5.0)
+if somePoint.isToTheRightOfX(1.0) {
+    print("This point is to the right of the line where x == 1.0")
+}
+```
+
+## 在结构体的实例方法中修改值
+
+在这个方法做的任何改变都会在方法执行结束时写回到原始结构中
+
+```swift
+struct NewPoint {
+    var x = 0.0, y = 0.0
+    mutating func moveByX(deltaX: Double, y deltaY: Double) { // 方法定义时加上了mutationg关键字,从而允许修改属性
+        x += deltaX
+        y += deltaY
+    }
+}
+var someNewPoint = NewPoint(x: 1.0, y: 1.0)
+someNewPoint.moveByX(2.0, y: 3.0)
+print("The point is now at (\(someNewPoint.x), \(someNewPoint.y))")
+
+let fixedPoint = NewPoint(x: 3.0, y: 3.0)
+//fixedPoint.moveByX(2.0, y: 3.0) // 不能再结构体类型的常量上调用可变方法,因为其属性不能被修改,即时属性是变量属性
+```
+
+## 在可变方法中给self赋值
+
+```swift
+struct NewNewPoint {
+    var x = 0.0, y = 0.0
+    mutating func moveByX(deltaX: Double, deltaY: Double) {
+        self = NewNewPoint(x: x + deltaX, y: y + deltaY)
+    }
+}
+var someNewNewPoint = NewNewPoint(x: 1.0, y: 1.0)
+someNewNewPoint.moveByX(2.0, deltaY: 3.0)
+print("The point is now at (\(someNewNewPoint.x), \(someNewNewPoint.y))")
+
+enum TriStateSwitch {
+    case Off, Low, High
+    mutating func next() {
+        switch self {
+        case Off :
+            self = Low
+        case Low:
+            self = High
+        case High:
+            self = Off
+        }
+    }
+}
+var ovenLight = TriStateSwitch.Low
+ovenLight.next()
+ovenLight.next()
+```
+
+## 类型方法
+
+类型方法中的self指向这个类型本身,而不是类型的实例
+
+```swift
+class SomeClass {
+    static func someTypeMethod() { // static 定义类方法
+
+    }
+}
+SomeClass.someTypeMethod() // 类方法只能由类型来调用
+
+struct LevelTracker {
+    static var highestUnlockedLevel = 1
+    static func unlockLevel(level: Int) {
+        if level > highestUnlockedLevel { highestUnlockedLevel = level  }
+    }
+    static func levelIsUnlocked(level: Int) -> Bool {
+        return level <= highestUnlockedLevel
+    }
+    var currentLevel = 1
+    mutating func advanceToLevel(level: Int) -> Bool {
+        if LevelTracker.levelIsUnlocked(level) {
+            currentLevel = level
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
+class Player {
+    var tracker = LevelTracker()
+    let playerName: String
+    func completedLevel(level: Int) {
+        LevelTracker.unlockLevel(level + 1)
+        tracker.advanceToLevel(level + 1)
+    }
+    init(name: String) { // 只要类中有属性没有初始化,必须调用初始化方法对其进行初始化
+        playerName = name
+    }
+}
+
+var player = Player(name: "Argyrios")
+player.completedLevel(1)
+print("highest unlocked level is now \(LevelTracker.highestUnlockedLevel)")
+
+player = Player(name: "Beto")
+if player.tracker.advanceToLevel(6) {
+    print("player is now on level 6")
+} else {
+    print("level 6 has not yet been unlocked")
+}
+```

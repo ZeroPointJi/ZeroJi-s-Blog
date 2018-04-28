@@ -1,0 +1,77 @@
+---
+title:  "XAMPP环境搭建"
+date:   2016-03-08 18:40:00 +8:00
+categories: mac
+tags: [环境搭建]
+---
+`XAMPP`环境搭建需要`XAMPP`和`Openfire`
+
+首先安装`XAMPP`和`Openfire`
+
+如果已经有了`Openfire`，就卸载重装一遍。
+
+卸载方法：
+
+- 打开终端
+- 依次执行以下命令
+  - sudo rm -rf /Library/PreferencePanes/Openfire.prefPane
+  - sudo rm -rf /usr/local/openfire
+  - sudo rm -rf /Library/LaunchDaemons/org.jivesoftware.openfire.plist
+
+就可以成功卸载`Openfire`。
+
+然后就可以开始安装以及配置环境。
+
+## 所需配件安装
+
+[XAMPP](https://www.apachefriends.org/zh_cn/index.html)
+
+安装完成后自动打开网页，选择中文即可。
+
+然后打开`manager-osx`，选择`Manage Servers`，点击`Start All`开启所有服务。
+
+[Openfire](http://www.igniterealtime.org/projects/openfire/)
+
+安装完成后打开偏好设置，点击`Openfire`，在弹窗中选`好`，如果`Status`为`Stopped`，点击`Start Openfire`开启服务。如果为`running`则不需要做任何操作。
+
+可能会遇到一个问题，服务启动失败，那是没有安装`java`运行库导致的，随便上网找一个`javaformac`安装好即可。
+
+## 环境配置
+
+目的：配置一个即时通信所需要的服务器和数据库。
+
+在浏览器的地址栏中输入`127.0.0.1:9090`，选择中文，点击继续。
+
+服务器配置不用修改，点击继续。
+
+数据库配置也不用修改，点击继续。
+
+看到数据库设置-标准连接页面，先停下对`Openfire`的配置。
+
+在桌面`commond` + `shift` + `g`，打开前往文件夹，在其中输入`usr`。
+
+找到`/usr/local/openfire`，右键`openfire`,选择`显示简介`,将`erveryone`的权限改为`读与写`.
+
+找到`openfire/resources/database`下的`openfire_mysql.sql`模版,复制粘贴到桌面.
+
+打开浏览器,新建页面,输入`localhost`,在左边栏的`工具`下点击`phpMyAdmin`.
+
+在弹出页面中编辑栏的`数据库`,在新建数据库的数据库名中输入数据库名称,点击`创建`.
+
+在左边栏中选择创建的数据库,在编辑栏中选择导入-> 选择文件 -> 桌面复制粘贴出来的数据库模版选中 -> 打开 -> 执行.
+
+回到先前没有配置完的`Openfire`页面中,点击`数据库驱动选项`,选择`MySQL`选项.
+
+在`数据库URL`中的`[hosts-name]`处替换为`127.0.0.1`,即本地服务器IP.在`[database-name]`处替换为刚刚创建的数据库名字.
+
+在`用户名`处输入`root`,`密码`空着就可以了,点击继续.
+
+特性设置选择`初始设置`,点击继续.
+
+管理员账户页面,输入登录密码,点击继续,等待安装完成.
+
+点击`登录到管理控制台`.
+
+用户名(默认admin),密码,登录.
+
+如果出现`服务器设置界面`则表示配置成功!
