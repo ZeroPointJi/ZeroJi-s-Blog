@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十九) 嵌套类型"
 date:   2016-03-23 14:20:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 嵌套类型
 

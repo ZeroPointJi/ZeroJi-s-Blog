@@ -1,8 +1,10 @@
 ---
 title:  "Switf（五）函数"
 date:   2016-03-07 18:30:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 单参函数
 

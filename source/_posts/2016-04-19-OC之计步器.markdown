@@ -1,8 +1,10 @@
 ---
 title:  "iOS 之计步器"
 date:   2016-04-19 17:30:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 计步器
 

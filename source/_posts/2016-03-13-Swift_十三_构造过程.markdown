@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十三) 构造过程"
 date:   2016-03-13 20:30:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 储存属性的初始赋值
 

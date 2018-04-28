@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（七）加密以及KVO"
 date:   2016-03-07 19:30:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 数据安全
 

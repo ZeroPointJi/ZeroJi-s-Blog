@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十五) 引用计数"
 date:   2016-03-20 16:15:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 自动引用计数
 

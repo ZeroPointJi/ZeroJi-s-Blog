@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（八）多线程"
 date:   2016-03-08 18:30:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 多线程概念
 

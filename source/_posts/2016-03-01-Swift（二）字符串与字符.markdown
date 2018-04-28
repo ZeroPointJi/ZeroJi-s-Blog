@@ -1,8 +1,10 @@
 ---
 title:  "Switf（二）字符串与字符"
 date:   2016-03-01 20:40:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 初始化空字符串
 

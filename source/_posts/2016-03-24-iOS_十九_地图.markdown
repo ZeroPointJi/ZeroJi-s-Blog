@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（十九）地图"
 date:   2016-03-24 19:10:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 地图定位
 

@@ -1,8 +1,10 @@
 ---
 title:  "iOS_ApplyPay"
 date:   2016-06-24 10:00:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ### ApplyPay
 

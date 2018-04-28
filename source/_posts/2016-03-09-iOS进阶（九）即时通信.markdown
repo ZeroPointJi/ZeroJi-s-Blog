@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（九）即时通信(1)"
 date:   2016-03-09 21:30:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 工程中添加XMPP
 

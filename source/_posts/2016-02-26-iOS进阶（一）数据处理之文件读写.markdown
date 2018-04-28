@@ -2,9 +2,9 @@
 title:  "iOS进阶（一）数据处理之文件读写"
 date:   2016-02-26 15:00:23
 categories: 
-  - Objective-C
-tags: 
   - iOS
+tags: 
+  - Objective-C
 ---
 # 一、沙盒机制
 

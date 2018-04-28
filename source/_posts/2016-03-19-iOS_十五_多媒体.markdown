@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（十五）多媒体"
 date:   2016-03-19 09:50:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 音频
 

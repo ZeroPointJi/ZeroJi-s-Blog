@@ -1,8 +1,10 @@
 ---
 title:  "Switf（四）控制流"
 date:   2016-03-03 21:00:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## for-in 循环
 

@@ -1,8 +1,10 @@
 ---
 title:  "Swift (七) 枚举"
 date:   2016-03-12 09:20:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 枚举语法
 

@@ -1,8 +1,10 @@
 ---
 title:  "OC review"
 date:   2016-03-17 19:50:00 +8:00
-categories: Objective-C
-tags: [OC]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 面向对象和面向过程
 

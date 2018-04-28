@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十一) 下标"
 date:   2016-03-13 14:54:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 下标语法
 

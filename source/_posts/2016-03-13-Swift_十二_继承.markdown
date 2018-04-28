@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十二) 继承"
 date:   2016-03-13 15:30:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 定义一个基类
 

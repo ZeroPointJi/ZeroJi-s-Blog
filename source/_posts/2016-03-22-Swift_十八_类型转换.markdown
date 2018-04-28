@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十八) 类型转换"
 date:   2016-03-22 20:10:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 定义一个类层次作为例子
 

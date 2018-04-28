@@ -1,8 +1,10 @@
 ---
 title:  "iOS 之 Crawer"
 date:   2016-03-28 20:35:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## Crawer 抽屉效果
 

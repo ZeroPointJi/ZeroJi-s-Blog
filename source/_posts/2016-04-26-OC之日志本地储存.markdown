@@ -1,8 +1,10 @@
 ---
 title:  "iOS 之输出日志本地存储"
 date:   2016-04-26 21:10:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 宏定义输出函数, 根据 `DEBUG` 开关来控制是否执行输出
 

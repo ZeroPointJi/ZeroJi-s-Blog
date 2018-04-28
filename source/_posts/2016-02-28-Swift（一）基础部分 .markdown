@@ -1,8 +1,10 @@
 ---
 title:  "Switf（一）基础部分"
 date:   2016-02-26 15:00:23
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 常量和变量
 

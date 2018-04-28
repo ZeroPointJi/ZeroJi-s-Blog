@@ -1,8 +1,10 @@
 ---
 title:  "Swift (二十二) 泛型"
 date:   2016-03-30 19:50:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 泛型函数
 

@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十四) 析构过程"
 date:   2016-03-14 09:40:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 析构过程原理
 

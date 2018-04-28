@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（八）PHP后台开发"
 date:   2016-03-17 19:30:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## PHP 基本语法
 

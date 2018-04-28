@@ -1,8 +1,10 @@
 ---
 title:  "Swift (八) 类和结构体"
 date:   2016-03-12 10:30:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 定义语法
 

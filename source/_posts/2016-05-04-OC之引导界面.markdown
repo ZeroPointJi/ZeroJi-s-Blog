@@ -1,8 +1,10 @@
 ---
 title:  "iOS 之引导界面"
 date:   2016-05-04 15:30:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 首先来说一下我对引导界面的理解, 引导界面是在启动界面后出现的视图, 就是 `Window` 的根视图控制器.
 

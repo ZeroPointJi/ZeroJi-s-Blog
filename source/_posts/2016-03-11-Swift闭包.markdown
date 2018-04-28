@@ -1,8 +1,10 @@
 ---
 title:  "Swift(六)闭包"
 date:   2016-03-10 16:00:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 闭包基础语法
 

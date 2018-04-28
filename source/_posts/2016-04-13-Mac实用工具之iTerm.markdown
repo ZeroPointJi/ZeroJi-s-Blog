@@ -1,8 +1,10 @@
 ---
 title:  "Mac实用工具之iTerm 2"
 date:   2016-04-13 17:00:00 +8:00
-categories: Mac
-tags: [Mac实用工具]
+categories: 
+- mac
+tags: 
+- 工具
 ---
 ## iTerm2
 

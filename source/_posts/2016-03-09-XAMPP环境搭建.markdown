@@ -1,8 +1,10 @@
 ---
 title:  "XAMPP环境搭建"
 date:   2016-03-08 18:40:00 +8:00
-categories: mac
-tags: [环境搭建]
+categories: 
+- mac
+tags: 
+- 环境搭建
 ---
 `XAMPP`环境搭建需要`XAMPP`和`Openfire`
 

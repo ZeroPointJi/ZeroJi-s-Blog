@@ -1,8 +1,10 @@
 ---
 title:  "Cocoapods第三方管理"
 date:   2016-03-22 16:20:00 +8:00
-categories: mac
-tags: [环境搭建]
+categories: 
+- mac
+tags: 
+- 工具
 ---
 ## 安装Cocoapods
 

@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（十）即时通信(2)"
 date:   2016-03-10 16:00:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 好友列表界面实现
 

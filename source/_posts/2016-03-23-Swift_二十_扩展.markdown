@@ -1,8 +1,10 @@
 ---
 title:  "Swift (二十) 扩展"
 date:   2016-03-23 21:00:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 扩展语法
 

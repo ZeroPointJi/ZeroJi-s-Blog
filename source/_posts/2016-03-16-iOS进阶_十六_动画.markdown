@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（十六）动画"
 date:   2016-03-16 19:50:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## 头尾式动画
 

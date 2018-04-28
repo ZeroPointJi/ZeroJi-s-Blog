@@ -1,8 +1,10 @@
 ---
 title:  "iOS进阶（三）CoreData"
 date:   2016-03-01 17:00:00 +8:00
-categories: Objective-C
-tags: [iOS]
+categories: 
+  - iOS
+tags: 
+  - Objective-C
 ---
 ## CoreData与SQLite
 

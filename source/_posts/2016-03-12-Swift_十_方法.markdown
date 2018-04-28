@@ -1,8 +1,10 @@
 ---
 title:  "Swift (十) 类和结构体"
 date:   2016-03-12 16:50:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 实例方法
 

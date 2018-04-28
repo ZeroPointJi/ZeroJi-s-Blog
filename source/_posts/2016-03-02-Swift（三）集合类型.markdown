@@ -1,8 +1,10 @@
 ---
 title:  "Switf（三）集合类型"
 date:   2016-03-01 20:40:00 +8:00
-categories: Swift
-tags: [Swift]
+categories: 
+- iOS
+tags: 
+- Swift
 ---
 ## 集合的可变性
 
