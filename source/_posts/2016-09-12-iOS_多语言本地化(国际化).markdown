@@ -2,9 +2,9 @@
 title:  "iOS_多语言本地化(国际化)"
 date:   2016-09-12 14:20:00 +8:00
 categories: 
-    - Objective-C
-tags: 
     - iOS
+tags: 
+    - Objective-C
 ---
 ### 多语言本地化(国际化)
 
